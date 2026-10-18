@@ -9,20 +9,66 @@ import streamlit as st
 st.set_page_config(page_title="Agent Payment Firewall", page_icon="🛡️", layout="wide")
 
 st.markdown("""<style>
-button[data-baseweb="tab"] { padding: 0.9rem 1.4rem !important; }
-button[data-baseweb="tab"] p { font-size: 1.25rem !important; font-weight: 600 !important; }
-div[data-baseweb="tab-list"] { gap: 0.5rem; }
+@import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap');
+:root {
+  --ink: #0a1430;        /* intaglio navy: page */
+  --vault: #101d40;      /* raised surfaces */
+  --rule: #24365f;       /* hairlines, guilloche */
+  --paper: #e9edf6;      /* primary text */
+  --muted: #9aa8c7;      /* secondary text */
+  --mint: #7fd8b8;       /* safe / allowed */
+  --coral: #ff7f6e;      /* scam / blocked */
+}
+html, body, [class*="css"], [data-testid="stAppViewContainer"] * { font-family: 'Schibsted Grotesk', system-ui, sans-serif; }
 [data-testid="stAppViewContainer"] {
   background:
-    radial-gradient(1100px 520px at 12% -8%, rgba(57,135,229,0.22), transparent 60%),
-    radial-gradient(900px 480px at 95% 0%, rgba(98,80,214,0.18), transparent 60%),
-    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px) 0 0 / 40px 40px,
-    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px) 0 0 / 40px 40px,
-    #0b1020;
+    radial-gradient(1200px 600px at 85% -10%, rgba(127,216,184,0.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(80,120,230,0.16), transparent 60%),
+    var(--ink);
 }
 [data-testid="stHeader"] { background: transparent; }
-[data-testid="stSidebar"] { background: rgba(20,27,46,0.92); }
-div[data-testid="stVerticalBlockBorderWrapper"] { background: rgba(20,27,46,0.72); border-radius: 14px; }
+[data-testid="stSidebar"] { background: #0c1838; border-right: 1px solid var(--rule); }
+.block-container { padding-top: 2.2rem; max-width: 1180px; }
+h1, h2, h3, h4 { color: var(--paper); letter-spacing: -0.02em; }
+h3 { font-weight: 700; font-size: 1.45rem; margin-top: 1.6rem; }
+p, li { color: #d3dbec; }
+
+/* hero: the one bold element, a guilloche rosette like the security printing on banknotes */
+.hero { position: relative; overflow: hidden; border: 1px solid var(--rule); border-radius: 22px;
+  padding: 2.6rem 2.6rem 2.2rem; margin-bottom: 1.4rem;
+  background: linear-gradient(160deg, #0f1d44 0%, #0b1534 70%); }
+.hero::before { content: ""; position: absolute; right: -180px; top: -200px; width: 640px; height: 640px; border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle at 50% 50%, transparent 0 9px, rgba(127,216,184,0.16) 9px 10px),
+    repeating-conic-gradient(from 0deg, rgba(127,216,184,0.10) 0deg 2deg, transparent 2deg 9deg);
+  -webkit-mask: radial-gradient(circle, #000 35%, transparent 70%); mask: radial-gradient(circle, #000 35%, transparent 70%); }
+.hero h1 { position: relative; font-size: 3.1rem; font-weight: 800; line-height: 1.02; margin: 0 0 0.7rem; color: var(--paper); }
+.hero p { position: relative; font-size: 1.22rem; color: var(--muted); max-width: 46ch; margin: 0; line-height: 1.45; }
+.hero .verdict { position: relative; display: inline-flex; gap: 0.6rem; margin-top: 1.4rem; flex-wrap: wrap; }
+.hero .chip { border: 1px solid var(--rule); border-radius: 999px; padding: 0.35rem 0.85rem; font-size: 0.95rem; color: var(--paper); background: rgba(10,20,48,0.6); }
+.hero .chip b { color: var(--mint); } .hero .chip.bad b { color: var(--coral); }
+
+/* cards and tabs */
+div[data-testid="stVerticalBlockBorderWrapper"] { background: rgba(16,29,64,0.72); border-color: var(--rule) !important; border-radius: 16px; }
+button[data-baseweb="tab"] { padding: 0.9rem 1.3rem !important; background: transparent !important; }
+button[data-baseweb="tab"] p { font-size: 1.2rem !important; font-weight: 600 !important; color: var(--muted); }
+button[data-baseweb="tab"][aria-selected="true"] p { color: var(--paper); }
+div[data-baseweb="tab-highlight"] { background: var(--mint) !important; height: 3px !important; }
+div[data-baseweb="tab-border"] { background: var(--rule) !important; }
+
+/* metrics read like line items on a statement */
+[data-testid="stMetric"] { background: rgba(16,29,64,0.72); border: 1px solid var(--rule); border-radius: 16px; padding: 1rem 1.1rem; }
+[data-testid="stMetricLabel"] p { color: var(--muted) !important; font-size: 0.98rem !important; }
+[data-testid="stMetricValue"] { font-weight: 800; letter-spacing: -0.02em; color: var(--paper); }
+
+/* buttons */
+.stButton > button[kind="primary"] { background: var(--mint); color: #08241b; border: 0; border-radius: 12px;
+  font-weight: 700; font-size: 1.05rem; padding: 0.6rem 1.4rem; }
+.stButton > button[kind="primary"]:hover { background: #9ae6ca; color: #08241b; }
+.stButton > button:focus-visible { outline: 3px solid #b9f0dc; outline-offset: 2px; }
+[data-testid="stExpander"] { border: 1px solid var(--rule); border-radius: 14px; background: rgba(16,29,64,0.5); }
+@media (max-width: 700px) { .hero { padding: 1.6rem; } .hero h1 { font-size: 2.1rem; } }
+
 </style>""", unsafe_allow_html=True)
 
 # On Streamlit Community Cloud, API keys come from the app's Secrets settings (never from the repo).
@@ -87,7 +133,8 @@ def layer_of(reason: str):
 
 def clean_fig(fig, height):
     fig.update_layout(height=height, margin=dict(t=10, b=10, l=10, r=10), showlegend=False,
-                      plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)")
+                      plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+                      font=dict(family="Schibsted Grotesk, sans-serif", color="#d3dbec", size=14))
     return fig
 
 
@@ -97,8 +144,7 @@ def load(path, mtime):
 
 
 # ================================================================ header
-st.markdown("# 🛡️ Agent Payment Firewall")
-st.markdown("##### Stops AI agents from being tricked into paying the wrong people.")
+HERO_SLOT = st.empty()
 
 files = sorted(glob.glob("results_*.json"), key=lambda f: (f != "results_haiku.json", f)) or sorted(glob.glob("results.json"))
 if not files:
@@ -117,6 +163,15 @@ modes, S, rows = d["modes"], d["summary"], pd.DataFrame(d["rows"])
 fw, base = S.get("on", {}), S.get("off", {})
 n_att = fw.get("n_attacks", 0)
 bad = {m: round(S[m]["attack_success_rate"] * S[m]["n_attacks"]) for m in modes}
+
+HERO_SLOT.markdown(f"""<div class="hero">
+<h1>Agent Payment Firewall</h1>
+<p>Stops AI agents from being tricked into paying the wrong people. Every payment is checked for who gets paid, how much, and what's bought, before any money moves.</p>
+<div class="verdict">
+<span class="chip bad"><b>{bad.get('off', 0)} of {n_att}</b> scams worked on the agent alone</span>
+<span class="chip"><b>{bad.get('on', 0)} of {n_att}</b> got past the firewall</span>
+<span class="chip"><b>{fw.get('legit_completion_rate', 0):.0%}</b> of genuine purchases went through</span>
+</div></div>""", unsafe_allow_html=True)
 
 c1, c2, c3 = st.columns(3)
 with c1:

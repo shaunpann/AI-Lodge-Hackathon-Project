@@ -25,7 +25,10 @@ def judge(accepted: dict, mandate: dict):
         r = llm.client().chat.completions.create(
             model=llm.model(), temperature=0, response_format={"type": "json_object"},
             messages=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}])
-        out = json.loads(r.choices[0].message.content)
+        import re
+        txt = r.choices[0].message.content or ""
+        m = re.search(r"\{.*\}", txt, re.S)
+        out = json.loads(m.group(0) if m else txt)
         v = out.get("verdict")
         if v not in ("approve", "reject", "uncertain"):
             return "uncertain", "judge returned invalid verdict"

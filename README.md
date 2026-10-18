@@ -13,8 +13,10 @@ is checked by deterministic rules and an LLM intent checker before a separate si
 
 | | No protection | Rules in the agent's prompt | **Firewall** |
 |---|---|---|---|
-| Scams that succeeded | 46% (15/33) | 9% (3/33) | **0% (0/33)** |
+| Scams that succeeded | 45% (15/33) | 9% (3/33) | **0% (0/33)** |
 | Genuine purchases completed | 100% (10/10) | 100% (10/10) | **100% (10/10)** |
+
+![Attack success rate by protection level](docs/asr_by_mode.png)
 
 ---
 
@@ -37,7 +39,7 @@ tricked agent can repeat the mistake at machine speed.
 ### Why it is worth solving
 Today the main safeguard is the model's own judgement, plus rules written into its prompt. We measured how
 far that gets you (Section 7): it helps, but it fails exactly where the seller controls what the agent
-believes, and unprotected behaviour varies enormously between models (46% vs 88% of scams succeeding).
+believes, and unprotected behaviour varies enormously between models (45% vs 88% of scams succeeding).
 
 ### Risks without this solution, and how the firewall mitigates them
 
@@ -223,10 +225,14 @@ merchant's ledger of payments that actually settled, not from the firewall's own
 
 | Metric | No protection | Prompt-only rules | **Firewall** |
 |---|---|---|---|
-| Attack success rate | 46% (15/33) | 9% (3/33) | **0% (0/33)** |
+| Attack success rate | 45% (15/33) | 9% (3/33) | **0% (0/33)** |
 | Genuine purchases completed | 100% (10/10) | 100% (10/10) | **100% (10/10)** |
 | False blocks | - | - | **0** |
 | Added time per payment | - | - | ~0.97 s |
+
+![Successful attacks by class](docs/attacks_by_class.png)
+
+![Which defence layer stopped them](docs/defence_layers.png)
 
 **Successful attacks by class** (out of 3 each):
 

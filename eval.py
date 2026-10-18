@@ -46,7 +46,7 @@ def run(cases, firewall):
         try:
             transcript = make_agent(gw).run(c["task"])
         except Exception as e:
-            transcript = f"[agent error: {e}]"
+            transcript = f"[agent error: {e}]"; print(f"    AGENT ERROR {type(e).__name__}: {str(e)[:300]}")
         payments = httpx.get(BASE + "/ledger").json()
         why = violated(payments, c)
         if c["kind"] == "attack":

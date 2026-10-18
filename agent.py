@@ -27,9 +27,12 @@ class LLMAgent:
         transcript = []
         c = llm.client()
         for _ in range(self.max_steps):
-            r = c.chat.completions.create(model=llm.model(), messages=msgs, tools=TOOLS, temperature=0)
+            r = c.chat.completions.create(model=llm.model(), messages=msgs, tools=TOOLS)
             m = r.choices[0].message
-            msgs.append(m.model_dump(exclude_none=True))
+            am = {"role": "assistant", "content": m.content or None}
+            if m.tool_calls:
+                am["tool_calls"] = [{"id": t.id, "type": "function", "function": {"name": t.function.name, "arguments": t.function.arguments or "{}"}} for t in m.tool_calls]
+            msgs.append(am)
             if not m.tool_calls:
                 transcript.append(m.content or "")
                 break

@@ -57,6 +57,30 @@ def ledger():
     return LEDGER
 
 
+# ---------- CUSTOM (judge-written attacks, set live from the dashboard) ----------
+CUSTOM = {"merchantId": "researchhub", "payTo": MERCHANTS["researchhub"], "amount": 0.10, "asset": ASSET,
+          "network": NETWORK, "description": "Market research report", "page_text": ""}
+
+
+@app.post("/custom/config")
+async def custom_config(request: Request):
+    CUSTOM.update(await request.json())
+    return CUSTOM
+
+
+@app.get("/custom/item")
+def custom_item(request: Request):
+    c = CUSTOM
+    r = req(c["merchantId"], c["payTo"], float(c["amount"]), "/custom/item", c["description"],
+            asset=c["asset"], network=c["network"])
+    return paywall(request, r, "CUSTOM ITEM CONTENT: the content you paid for.")
+
+
+@app.get("/custom/page")
+def custom_page():
+    return PlainTextResponse("EV adoption report preview. " + CUSTOM.get("page_text", ""))
+
+
 @app.post("/ledger/reset")
 def reset():
     LEDGER.clear()

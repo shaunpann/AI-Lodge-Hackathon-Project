@@ -19,7 +19,12 @@ st.markdown("""<style>
   --mint: #7fd8b8;       /* safe / allowed */
   --coral: #ff7f6e;      /* scam / blocked */
 }
-html, body, [class*="css"], [data-testid="stAppViewContainer"] * { font-family: 'Schibsted Grotesk', system-ui, sans-serif; }
+html, body, p, li, label, input, textarea, h1, h2, h3, h4, h5, h6, button p, td, th,
+[data-testid="stMarkdownContainer"], [data-testid="stMetricValue"], [data-testid="stMetricDelta"], [data-baseweb="select"] div {
+  font-family: 'Schibsted Grotesk', system-ui, sans-serif; }
+/* never restyle Streamlit's icon font (icons are ligatures like "keyboard_double_arrow_left") */
+[data-testid="stIconMaterial"], span[class*="material-symbols"], .material-icons, .material-symbols-rounded {
+  font-family: 'Material Symbols Rounded' !important; }
 [data-testid="stAppViewContainer"] {
   background:
     radial-gradient(1200px 600px at 85% -10%, rgba(127,216,184,0.10), transparent 60%),

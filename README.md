@@ -5,7 +5,7 @@
 A firewall between an AI agent and its wallet. The agent never holds a key: every payment it tries to make
 is checked by deterministic rules and an LLM intent checker before a separate signer will sign it.
 
-**Track:** Safety by Design · **Live demo:** _<your Streamlit URL>_ · **Demo video:** _<link>_
+**Track:** Safety by Design · **Live demo:** https://ai-lodge-agent-payment-firewall.streamlit.app/ · **Demo video:** _<link>_
 
 ### Results at a glance
 

@@ -224,7 +224,7 @@ with tab_live:
         case = next(c for c in cases if c["id"] == pick)
         if case["kind"] == "attack":
             name, does, stop = ATTACKS.get(case["attack_class"], ("", "", ""))
-            st.markdown(f"**What the scammer does:** {does}  \n**What should stop it:** {stop}")
+            st.markdown(f"**What the scammer does:** {does}  \n**What should stop it:** {stop}".replace("$", "\\$"))
         else:
             st.markdown("**A normal purchase.** The firewall should let this through untouched.")
     else:
@@ -253,7 +253,7 @@ with tab_live:
 
     m = case["mandate"]
     st.caption(f"👤 User asked the agent: *{case['task']}* · Rules: approved shops {', '.join(m['allowed_merchants'])}, "
-               f"max ${m['max_per_payment']:.2f} per payment, ${m['max_total']:.2f} total.")
+               f"max \\${m['max_per_payment']:.2f} per payment, \\${m['max_total']:.2f} total.")
     if port_busy:
         st.warning("Port 8402 is in use. If eval.py is running, wait for it to finish first.")
     import datetime
@@ -302,7 +302,7 @@ with tab_live:
                     for i, x in enumerate(gw.decisions, 1):
                         ok = x["decision"] == "allow"
                         with st.container(border=True):
-                            st.markdown(f"**Payment request {i}:** ${x['amount']} to shop `{x['merchant']}`, wallet `{x['payTo'][:12]}…`")
+                            st.markdown(f"**Payment request {i}:** \\${x['amount']} to shop `{x['merchant']}`, wallet `{x['payTo'][:12]}…`")
                             if firewall:
                                 st.markdown(("✅ **Allowed** · " if ok else "⛔ **Blocked** · ") + " · ".join(plain(r) for r in x["reasons"]))
                             else:

@@ -27,7 +27,9 @@ class Gateway:
         r = httpx.get(self.base + path, timeout=10)
         if r.status_code == 402:
             a = r.json()["accepts"][0]
-            return f"[402 PAYMENT REQUIRED: {a['maxAmountRequired']} {a['asset']} to {a.get('merchantId')}. Use paid_fetch to buy.]"
+            return (f"[402 PAYMENT REQUIRED] merchant={a.get('merchantId')} amount={a['maxAmountRequired']} "
+                    f"asset={a['asset']} network={a['network']} payTo={a['payTo']} "
+                    f"description={a.get('description', '')!r}. Use paid_fetch to buy.")
         return r.text
 
     # Tool 2: fetch a paid resource. All payments go through here.

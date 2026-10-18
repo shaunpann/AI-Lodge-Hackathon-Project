@@ -8,6 +8,23 @@ import streamlit as st
 
 st.set_page_config(page_title="Agent Payment Firewall", page_icon="🛡️", layout="wide")
 
+st.markdown("""<style>
+button[data-baseweb="tab"] { padding: 0.9rem 1.4rem !important; }
+button[data-baseweb="tab"] p { font-size: 1.25rem !important; font-weight: 600 !important; }
+div[data-baseweb="tab-list"] { gap: 0.5rem; }
+[data-testid="stAppViewContainer"] {
+  background:
+    radial-gradient(1100px 520px at 12% -8%, rgba(57,135,229,0.22), transparent 60%),
+    radial-gradient(900px 480px at 95% 0%, rgba(98,80,214,0.18), transparent 60%),
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px) 0 0 / 40px 40px,
+    #0b1020;
+}
+[data-testid="stHeader"] { background: transparent; }
+[data-testid="stSidebar"] { background: rgba(20,27,46,0.92); }
+div[data-testid="stVerticalBlockBorderWrapper"] { background: rgba(20,27,46,0.72); border-radius: 14px; }
+</style>""", unsafe_allow_html=True)
+
 # On Streamlit Community Cloud, API keys come from the app's Secrets settings (never from the repo).
 try:
     for _k, _v in st.secrets.items():
@@ -103,17 +120,17 @@ bad = {m: round(S[m]["attack_success_rate"] * S[m]["n_attacks"]) for m in modes}
 
 c1, c2, c3 = st.columns(3)
 with c1:
-    with st.container(border=True):
+    with st.container(border=True, height=230):
         st.markdown("**😬 The problem**")
         st.write("AI agents can now pay for things on their own. But every payment request (the price, the wallet, "
                  "what's being sold) is written by the seller. A scammer just has to write a convincing one.")
 with c2:
-    with st.container(border=True):
+    with st.container(border=True, height=230):
         st.markdown("**🛡️ The fix**")
         st.write("The agent never holds the money. Every payment goes through a firewall that checks **who** is paid, "
                  "**how much**, and **what** is bought, before a separate wallet signs anything.")
 with c3:
-    with st.container(border=True):
+    with st.container(border=True, height=230):
         st.markdown("**📊 The result**")
         if "on" in bad:
             st.write(f"Across **{n_att} scam attempts**, **{bad.get('off', 0)}** worked on the agent alone"

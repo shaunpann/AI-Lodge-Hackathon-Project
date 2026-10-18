@@ -22,9 +22,19 @@ class Gateway:
         with open(LOG_PATH, "a") as f:
             f.write(json.dumps(entry, default=str) + "\n")
 
+    def _url(self, path):
+        """Normalise whatever path the model produced: 'researchhub/x', '/researchhub/x' or a full URL."""
+        from urllib.parse import urlparse
+        path = (path or "").strip()
+        if path.startswith("http"):
+            path = urlparse(path).path
+        if not path.startswith("/"):
+            path = "/" + path
+        return self.base + path
+
     # Tool 1: read a page. Never pays.
     def fetch_page(self, path):
-        r = httpx.get(self.base + path, timeout=10)
+        r = httpx.get(self._url(path), timeout=10)
         if r.status_code == 402:
             a = r.json()["accepts"][0]
             return (f"[402 PAYMENT REQUIRED] merchant={a.get('merchantId')} amount={a['maxAmountRequired']} "
@@ -34,7 +44,7 @@ class Gateway:
 
     # Tool 2: fetch a paid resource. All payments go through here.
     def paid_fetch(self, path):
-        r = httpx.get(self.base + path, timeout=10)
+        r = httpx.get(self._url(path), timeout=10)
         if r.status_code != 402:
             return r.text
         accepted = r.json()["accepts"][0]
@@ -71,5 +81,5 @@ class Gateway:
         self.state["payments"] += 1
         self.state["paid_resources"].add(accepted["resource"])
         self._log(entry)
-        r2 = httpx.get(self.base + path, headers={"X-PAYMENT": header}, timeout=10)
+        r2 = httpx.get(self._url(path), headers={"X-PAYMENT": header}, timeout=10)
         return r2.text if r2.status_code == 200 else f"[payment sent but merchant returned {r2.status_code}]"

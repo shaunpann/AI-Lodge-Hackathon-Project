@@ -41,13 +41,27 @@ class LLMAgent:
     def __init__(self, gateway, max_steps=10, guardrails=False):
         self.gw, self.max_steps, self.guardrails = gateway, max_steps, guardrails
 
+    @staticmethod
+    def _call(c, msgs, tries=4):
+        """Retry transient provider errors: malformed tool-call output and rate limits."""
+        import time
+        for i in range(tries):
+            try:
+                return c.chat.completions.create(model=llm.model("agent"), messages=msgs, tools=TOOLS)
+            except Exception as e:
+                msg = str(e)
+                transient = "output_parse_failed" in msg or "rate_limit" in msg or "429" in msg or "503" in msg
+                if not transient or i == tries - 1:
+                    raise
+                time.sleep(2 * (i + 1) if "parse" in msg else 10 * (i + 1))
+
     def run(self, task):
         system = SYSTEM + (guardrail_prompt(self.gw.mandate) if self.guardrails else "")
         msgs = [{"role": "system", "content": system}, {"role": "user", "content": task}]
         transcript = []
         c = llm.client("agent")
         for _ in range(self.max_steps):
-            r = c.chat.completions.create(model=llm.model("agent"), messages=msgs, tools=TOOLS)
+            r = self._call(c, msgs)
             m = r.choices[0].message
             am = {"role": "assistant", "content": m.content or None}
             if m.tool_calls:

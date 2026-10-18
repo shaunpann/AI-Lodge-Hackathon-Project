@@ -263,6 +263,15 @@ merchant's ledger of payments that actually settled, not from the firewall's own
   committed before their first run, were all handled correctly (3 off-intent items blocked, including an
   oil-and-gas report that matched the item type but not the topic; 2 on-topic reports approved).
 
+### Real on-chain check (Base Sepolia)
+`onchain_proof.py` sends two payment requests through the same policy engine, then settles approved payments on
+**Base Sepolia testnet**:
+- Legitimate purchase: **allowed**, settled on-chain: [view transaction](https://sepolia.basescan.org/tx/0xc147ed8f456e2aaf20e6637282efe0fe31a5d032d484d6cf7cbdfb04d265e257)
+- Payout-address swap attack: **blocked**, nothing sent on-chain
+
+This is a direct testnet transfer triggered by the firewall's decision (not yet a full x402 facilitator flow); the
+43-case evaluation and the live demo use simulated settlement. Record: `onchain_proof.json`.
+
 ### How the evaluation was kept honest
 - The original attack suite was committed **before** any defence tuning; held-out and adaptive cases were
   each committed before their first run (`git log`).

@@ -16,7 +16,8 @@ try:
 except Exception:
     pass
 
-MAX_LIVE_RUNS_PER_VISITOR = int(os.environ.get("MAX_LIVE_RUNS", "6"))
+MAX_LIVE_RUNS_PER_VISITOR = int(os.environ.get("MAX_LIVE_RUNS", "6"))      # per browser session (resets on reload)
+MAX_LIVE_RUNS_PER_DAY = int(os.environ.get("MAX_LIVE_RUNS_PER_DAY", "100"))  # across ALL visitors: the real spend cap
 REPO = "https://github.com/shaunpann/AI-Lodge-Hackathon-Project"
 
 MODE_LABEL = {"off": "Agent alone", "prompt": "Agent told the rules", "on": "Agent + firewall"}
@@ -82,7 +83,7 @@ def load(path, mtime):
 st.markdown("# 🛡️ Agent Payment Firewall")
 st.markdown("##### Stops AI agents from being tricked into paying the wrong people.")
 
-files = sorted(glob.glob("results*.json"), key=lambda f: (f != "results_haiku.json", f))
+files = sorted(glob.glob("results_*.json"), key=lambda f: (f != "results_haiku.json", f)) or sorted(glob.glob("results.json"))
 if not files:
     st.warning("No results yet: run `python3 eval.py` first.")
     st.stop()
@@ -193,7 +194,7 @@ with tab_live:
     @st.cache_resource
     def server_state():
         import threading
-        return {"started": False, "lock": threading.Lock()}
+        return {"started": False, "lock": threading.Lock(), "day": None, "count": 0}
 
     srv = server_state()
     port_busy = (not srv["started"]) and socket.socket().connect_ex(("127.0.0.1", 8402)) == 0
@@ -255,15 +256,24 @@ with tab_live:
                f"max ${m['max_per_payment']:.2f} per payment, ${m['max_total']:.2f} total.")
     if port_busy:
         st.warning("Port 8402 is in use. If eval.py is running, wait for it to finish first.")
+    import datetime
+    today = datetime.date.today().isoformat()
+    if srv["day"] != today:
+        srv["day"], srv["count"] = today, 0
     runs_used = st.session_state.get("runs_used", 0)
-    clicked = st.button("▶ Run it", type="primary", disabled=runs_used >= MAX_LIVE_RUNS_PER_VISITOR)
-    st.caption(f"Uses a real AI agent. {MAX_LIVE_RUNS_PER_VISITOR - runs_used} runs left in this session.")
+    day_left = MAX_LIVE_RUNS_PER_DAY - srv["count"]
+    clicked = st.button("▶ Run it", type="primary", disabled=runs_used >= MAX_LIVE_RUNS_PER_VISITOR or day_left <= 0)
+    if day_left <= 0:
+        st.warning("Today's live-run limit for this public demo has been reached. The Results tab shows the full evaluation.")
+    else:
+        st.caption(f"Uses a real AI agent. {MAX_LIVE_RUNS_PER_VISITOR - runs_used} runs left in this session.")
     if clicked and not srv["lock"].acquire(blocking=False):
         st.warning("Someone else's run is in progress. Try again in a few seconds.")
         clicked = False
     if clicked:
         try:
             st.session_state["runs_used"] = runs_used + 1
+            srv["count"] += 1
             import httpx, llm
             from eval import BASE, violated
             from signer import Signer

@@ -1,6 +1,4 @@
 __pycache__/
-logs.jsonl
+.DS_Store
 .env
-.DS_Store
-.DS_Store
-.DS_Store
+logs.jsonl

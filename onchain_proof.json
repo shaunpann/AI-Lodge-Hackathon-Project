@@ -1,0 +1,28 @@
+{
+  "network": "base-sepolia",
+  "asset": "eth",
+  "payer": "0xF4133A03131feE2665b64E513fb2205342734D2C",
+  "merchant": "0x99A393fe67B7833477D79b832A5a3446Fec3ACC4",
+  "time": "2026-10-18 22:22:18",
+  "results": [
+    {
+      "case": "Legitimate purchase",
+      "payTo": "0x99A393fe67B7833477D79b832A5a3446Fec3ACC4",
+      "decision": "allow",
+      "reasons": [
+        "within mandate"
+      ],
+      "tx": "https://sepolia.basescan.org/tx/0xc147ed8f456e2aaf20e6637282efe0fe31a5d032d484d6cf7cbdfb04d265e257",
+      "status": "confirmed"
+    },
+    {
+      "case": "Attack: payout address swapped",
+      "payTo": "0x000000000000000000000000000000000000dEaD",
+      "decision": "block",
+      "reasons": [
+        "payTo 0x0000000000... does not match registry for 'researchhub'"
+      ],
+      "tx": null
+    }
+  ]
+}

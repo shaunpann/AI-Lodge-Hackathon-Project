@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent payment firewall</title>
+<style>
+:root{--bg:#fafaf8;--fg:#1d1d1b;--mut:#6b6a65;--card:#fff;--line:#e4e2db;--ok:#0f6e56;--bad:#a32d2d;--okbg:#e1f5ee;--badbg:#fcebeb}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--fg:#ecebe6;--mut:#9c9a92;--card:#1f1f1d;--line:#33322f;--ok:#5dcaa5;--bad:#f09595;--okbg:#0b2e25;--badbg:#3a1414}}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:24px 16px}
+h1{font-size:22px;font-weight:500;margin:0 0 4px}h2{font-size:16px;font-weight:500;margin:28px 0 10px}
+.sub{color:var(--mut);margin:0 0 20px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi .l{color:var(--mut);font-size:13px}.kpi .v{font-size:28px;font-weight:500}.kpi .d{font-size:13px;color:var(--mut)}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--mut);font-weight:500}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px}
+.allow{background:var(--okbg);color:var(--ok)}.block{background:var(--badbg);color:var(--bad)}
+.wrap{overflow-x:auto}select{font:inherit;padding:4px;margin-left:8px}
+</style></head><body><main>
+<h1>Agent payment firewall</h1>
+<p class="sub" id="meta">Loading results.json…</p>
+<div class="kpis" id="kpis"></div>
+<h2>Attacks that succeeded, by class</h2>
+<div class="wrap"><table id="cls"></table></div>
+<h2>Firewall decisions <select id="f"><option value="all">all</option><option value="block">blocked</option><option value="allow">allowed</option></select></h2>
+<div class="wrap"><table id="log"></table></div>
+</main>
+<script>
+const pct=x=>Math.round(x*100)+"%";
+fetch("results.json").then(r=>r.json()).then(d=>{
+  const b=d.baseline,f=d.firewall;
+  document.getElementById("meta").textContent=`${b.n_attacks} attacks, ${b.n_legit} legitimate tasks · agent: ${d.model||d.agent}`;
+  const k=[["Attack success rate",pct(f.attack_success_rate),`${pct(b.attack_success_rate)} without firewall`],
+           ["Legit task completion",pct(f.legit_completion_rate),`${pct(b.legit_completion_rate)} without firewall`],
+           ["False-block rate",pct(f.false_block_rate),"legit tasks wrongly stopped"],
+           ["Avg decision latency",f.avg_check_ms+" ms","policy + intent judge"]];
+  document.getElementById("kpis").innerHTML=k.map(([l,v,s])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="d">${s}</div></div>`).join("");
+  document.getElementById("cls").innerHTML="<tr><th>Attack class</th><th>Firewall off</th><th>Firewall on</th></tr>"+
+    Object.entries(d.by_class).map(([c,v])=>`<tr><td>${c.replaceAll("_"," ")}</td><td>${v.off}/${v.n}</td><td>${v.on}/${v.n}</td></tr>`).join("");
+  const dec=d.rows.filter(r=>r.firewall).flatMap(r=>r.decisions.map(x=>({...x,kind:r.kind})));
+  const draw=()=>{const m=document.getElementById("f").value;
+    document.getElementById("log").innerHTML="<tr><th>Case</th><th>Merchant</th><th>Amount</th><th>Decision</th><th>Reasons</th><th>Judge</th></tr>"+
+    dec.filter(x=>m==="all"||x.decision===m).map(x=>`<tr><td>${x.case}</td><td>${x.merchant}</td><td>${x.amount}</td><td><span class="pill ${x.decision}">${x.decision}</span></td><td>${x.reasons.join("; ")}</td><td>${x.judge}${x.judge_reason?": "+x.judge_reason:""}</td></tr>`).join("");};
+  document.getElementById("f").onchange=draw;draw();
+}).catch(()=>document.getElementById("meta").textContent="Run python eval.py first, then serve this folder: python -m http.server 8000");
+</script></body></html>

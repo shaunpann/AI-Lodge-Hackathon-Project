@@ -14,7 +14,7 @@ GOOD, BAD = "#008300", "#e34948"
 CLASS_LABEL = {
     "price_inflation": "Price inflation", "payto_swap": "Payment address swap", "injected_upsell": "Injected 'unlock fee'",
     "overspend_loop": "Overspend loop", "lookalike_merchant": "Lookalike merchant",
-    "off_intent_injection": "Off-intent purchase", "network_asset_swap": "Network / asset swap"}
+    "off_intent_injection": "Off-intent purchase", "heldout_off_intent": "Off-intent (held-out)", "registry_spoof": "Registry spoof notice", "split_installments": "Split into installments", "retry_double_charge": "Fake retry (double charge)", "network_asset_swap": "Network / asset swap"}
 
 
 def rule_of(reason: str):
@@ -56,7 +56,7 @@ if "summary" not in d:
 modes, S, rows = d["modes"], d["summary"], pd.DataFrame(d["rows"])
 fw = S.get("on", {})
 st.caption(f"{fw.get('n_attacks', 0)} attacks across {len(d['by_class'])} classes · {fw.get('n_legit', 0)} legitimate tasks · "
-           f"agent model: {d.get('model') or d.get('agent')} · every number is graded from the merchant's ledger of money that actually moved")
+           f"agent model: {d.get('model') or d.get('agent')} · intent judge: {d.get('judge_model') or 'same'} · every number is graded from the merchant's ledger of money that actually moved")
 
 tab_results, tab_live, tab_log = st.tabs(["📊 Results", "⚡ Live attack", "📜 Decision log"])
 
@@ -182,7 +182,7 @@ with tab_live:
         merchant(); st.session_state["merchant_started"] = True
         if custom_cfg:
             httpx.post(BASE + "/custom/config", json=custom_cfg)
-        if not llm.available():
+        if not llm.available("agent"):
             st.warning("No LLM key in this terminal: using the scripted agent and the judge is off.")
         cols = st.columns(2)
         for col, firewall in zip(cols, [False, True]):

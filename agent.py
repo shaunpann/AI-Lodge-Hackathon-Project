@@ -45,9 +45,9 @@ class LLMAgent:
         system = SYSTEM + (guardrail_prompt(self.gw.mandate) if self.guardrails else "")
         msgs = [{"role": "system", "content": system}, {"role": "user", "content": task}]
         transcript = []
-        c = llm.client()
+        c = llm.client("agent")
         for _ in range(self.max_steps):
-            r = c.chat.completions.create(model=llm.model(), messages=msgs, tools=TOOLS)
+            r = c.chat.completions.create(model=llm.model("agent"), messages=msgs, tools=TOOLS)
             m = r.choices[0].message
             am = {"role": "assistant", "content": m.content or None}
             if m.tool_calls:
@@ -84,5 +84,5 @@ class ScriptedAgent:
 
 
 def make_agent(gateway, guardrails=False):
-    cls = LLMAgent if llm.available() else ScriptedAgent
+    cls = LLMAgent if llm.available("agent") else ScriptedAgent
     return cls(gateway, guardrails=guardrails)

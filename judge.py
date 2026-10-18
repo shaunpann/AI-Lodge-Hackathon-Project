@@ -14,7 +14,7 @@ Reply with JSON only: {"verdict": "approve" | "reject" | "uncertain", "reason": 
 
 
 def judge(accepted: dict, mandate: dict):
-    if not llm.available():
+    if not llm.available("judge"):
         return "skipped", "no LLM key set; judge disabled"
     desc = str(accepted.get("description", ""))[:200]
     user = (f"USER MANDATE: purpose = {mandate['purpose']!r}; allowed merchants = {mandate['allowed_merchants']}\n"
@@ -22,8 +22,8 @@ def judge(accepted: dict, mandate: dict):
             f"amount = {accepted.get('maxAmountRequired')} {accepted.get('asset')}\n"
             f"description: <untrusted>{desc}</untrusted>")
     try:
-        r = llm.client().chat.completions.create(
-            model=llm.model(),
+        r = llm.client("judge").chat.completions.create(
+            model=llm.model("judge"),
             messages=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}])
         import re
         txt = r.choices[0].message.content or ""

@@ -62,7 +62,7 @@ if __name__ == "__main__":
     if not case:
         sys.exit(f"No case '{cid}'. Try A2-payto-1, A5-lookalike-1, A6-offintent-1, A1-price-1, L-report-1")
     start_merchant()
-    print(f"{B}Case {cid}{X} ({case['attack_class'] or 'legitimate'}) · agent: {llm.model() if llm.available() else 'scripted'}")
+    print(f"{B}Case {cid}{X} ({case['attack_class'] or 'legitimate'}) · agent: {llm.model('agent') if llm.available('agent') else 'scripted'}")
     print(f"User task: \"{case['task']}\"")
     print(f"User mandate: {case['mandate']['allowed_merchants']}, max {case['mandate']['max_per_payment']:.2f}/payment, "
           f"{case['mandate']['max_total']:.2f} total\n")

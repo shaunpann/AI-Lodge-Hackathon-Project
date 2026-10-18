@@ -8,6 +8,16 @@ import streamlit as st
 
 st.set_page_config(page_title="Agent Payment Firewall", page_icon="🛡️", layout="wide")
 
+# On Streamlit Community Cloud, API keys come from the app's Secrets settings (never from the repo).
+try:
+    for _k, _v in st.secrets.items():
+        if isinstance(_v, (str, int, float)):
+            os.environ.setdefault(_k, str(_v))
+except Exception:
+    pass  # no secrets file locally: use the Terminal's exported variables
+
+MAX_LIVE_RUNS_PER_VISITOR = int(os.environ.get("MAX_LIVE_RUNS", "6"))
+
 MODE_LABEL = {"off": "No protection", "prompt": "Prompt-only rules", "on": "Firewall"}
 MODE_COLOR = {"off": "#eb6834", "prompt": "#1baf7a", "on": "#2a78d6"}  # validated categorical slots (labels always shown)
 GOOD, BAD = "#008300", "#e34948"
@@ -45,10 +55,13 @@ def load(path, mtime):
     return json.load(open(path))
 
 st.title("🛡️ Agent Payment Firewall")
-if not os.path.exists("results.json"):
-    st.warning("No results.json yet: run `python3 eval.py` first.")
+import glob
+files = sorted(glob.glob("results*.json"), key=lambda f: (f != "results_haiku.json", f))
+if not files:
+    st.warning("No results yet: run `python3 eval.py` first.")
     st.stop()
-d = load("results.json", os.path.getmtime("results.json"))
+src = st.sidebar.selectbox("Results file", files, help="Copy results.json to results_<model>.json after each run to keep it.")
+d = load(src, os.path.getmtime(src))
 if "summary" not in d:
     st.error("results.json is from the old 2-mode eval. Re-run `python3 eval.py` with the updated files.")
     st.stop()
@@ -129,13 +142,19 @@ with tab_results:
 # ---------------------------------------------------------------- live tab
 with tab_live:
     st.write("Runs one case live: the same agent, the same attack, without and then with the firewall.")
-    port_busy = socket.socket().connect_ex(("127.0.0.1", 8402)) == 0
-
     @st.cache_resource
+    def server_state():
+        import threading
+        return {"started": False, "lock": threading.Lock()}
+
+    srv = server_state()
+    port_busy = (not srv["started"]) and socket.socket().connect_ex(("127.0.0.1", 8402)) == 0
+
     def merchant():
-        from eval import start_merchant
-        start_merchant()
-        return True
+        if not srv["started"]:
+            from eval import start_merchant
+            start_merchant()
+            srv["started"] = True
 
     cases = json.load(open("cases.json"))
     source = st.radio("Attack source", ["Preset case from the test suite", "Write your own attack"], horizontal=True)
@@ -170,16 +189,24 @@ with tab_live:
                 "mandate": cases[0]["mandate"], "bad_prefixes": [], "success_marker": None}
     st.info(f"**User task:** {case['task']}  \n**Mandate:** merchants {case['mandate']['allowed_merchants']}, "
             f"max {case['mandate']['max_per_payment']:.2f}/payment, {case['mandate']['max_total']:.2f} total")
-    if port_busy and "merchant_started" not in st.session_state:
+    if port_busy:
         st.warning("Port 8402 is in use. If eval.py is running, wait for it to finish, or the live run will disturb its results.")
+    runs_used = st.session_state.get("runs_used", 0)
+    st.caption(f"Each run makes real LLM calls. {MAX_LIVE_RUNS_PER_VISITOR - runs_used} live runs left in this session.")
 
-    if st.button("▶ Run this case", type="primary"):
+    clicked = st.button("▶ Run this case", type="primary", disabled=runs_used >= MAX_LIVE_RUNS_PER_VISITOR)
+    if clicked and not srv["lock"].acquire(blocking=False):
+        st.warning("Someone else's live run is in progress. Try again in a few seconds.")
+        clicked = False
+    if clicked:
+      try:
+        st.session_state["runs_used"] = runs_used + 1
         import httpx, llm
         from eval import BASE, violated
         from signer import Signer
         from gateway import Gateway
         from agent import make_agent
-        merchant(); st.session_state["merchant_started"] = True
+        merchant()
         if custom_cfg:
             httpx.post(BASE + "/custom/config", json=custom_cfg)
         if not llm.available("agent"):
@@ -215,6 +242,8 @@ with tab_live:
                     (st.error if why else st.success)(f"Attack {'SUCCEEDED: ' + ', '.join(why) if why else 'BLOCKED'}")
                 else:
                     (st.success if pays and not why else st.error)("Legit purchase " + ("completed" if pays and not why else "blocked"))
+      finally:
+        srv["lock"].release()
 
 # ---------------------------------------------------------------- log tab
 with tab_log:

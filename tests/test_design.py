@@ -18,7 +18,7 @@ def test_no_secrets_committed():
     import subprocess
     tracked = subprocess.run(["git", "ls-files"], capture_output=True, text=True).stdout.split()
     assert not any(p.startswith(".keys/") or p.endswith((".key", ".env")) or "secrets.toml" in p for p in tracked)
-    api_key = re.compile(r"sk-ant-[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9]{20,}")
+    api_key = re.compile(r"sk-ant-[A-Za-z0-9_-]{20,}|sk-proj-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{32,}|gsk_[A-Za-z0-9]{20,}")
     hex64 = re.compile(r"0x[0-9a-fA-F]{64}\b")  # a private key looks like this; so does a transaction hash
     for p in tracked:
         if p.endswith((".py", ".md", ".json", ".toml", ".txt", ".yml")):
@@ -32,3 +32,12 @@ def test_readme_code_map_matches_source():
     """The README embeds docs/code_map.mmd (GitHub only renders inline Mermaid); keep the two in sync."""
     src = open("docs/code_map.mmd").read().strip()
     assert src in open("README.md").read()
+
+
+def test_reasoning_effort_is_per_role_and_never_leaks(monkeypatch):
+    import llm
+    monkeypatch.delenv("AGENT_REASONING_EFFORT", raising=False)
+    monkeypatch.setenv("LLM_REASONING_EFFORT", "none")  # must NOT apply to anyone: no LLM_* fallback
+    assert llm.extra("agent") == {} and llm.extra("judge") == {}
+    monkeypatch.setenv("AGENT_REASONING_EFFORT", "none")
+    assert llm.extra("agent") == {"reasoning_effort": "none"} and llm.extra("judge") == {}

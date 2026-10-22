@@ -52,7 +52,7 @@ def ask_once(accepted, mandate):
     """One independent sample. Returns (verdict, reason); verdict 'error' on any failure."""
     try:
         r = llm.client("judge").chat.completions.create(
-            model=llm.model("judge"),
+            model=llm.model("judge"), **llm.extra("judge"),
             messages=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": _prompt(accepted, mandate)}])
         txt = r.choices[0].message.content or ""
         m = re.search(r"\{.*\}", txt, re.S)

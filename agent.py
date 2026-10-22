@@ -47,7 +47,7 @@ class LLMAgent:
         import time
         for i in range(tries):
             try:
-                return c.chat.completions.create(model=llm.model("agent"), messages=msgs, tools=TOOLS)
+                return c.chat.completions.create(model=llm.model("agent"), messages=msgs, tools=TOOLS, **llm.extra("agent"))
             except Exception as e:
                 msg = str(e)
                 transient = "output_parse_failed" in msg or "rate_limit" in msg or "429" in msg or "503" in msg

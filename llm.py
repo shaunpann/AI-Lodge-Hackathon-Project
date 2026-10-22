@@ -4,7 +4,10 @@ Default settings: LLM_API_KEY, LLM_BASE_URL, LLM_MODEL.
 Per-role overrides (so the agent and the intent judge can use different models):
   AGENT_API_KEY / AGENT_BASE_URL / AGENT_MODEL   -> the agent being protected
   JUDGE_API_KEY / JUDGE_BASE_URL / JUDGE_MODEL   -> the firewall's intent judge
-Any override not set falls back to the LLM_* value."""
+Any override not set falls back to the LLM_* value.
+Optional, per role only (no LLM_* fallback, so it never leaks to another provider):
+  AGENT_REASONING_EFFORT=none   e.g. for OpenAI reasoning models, which refuse tool calls on
+                                /v1/chat/completions unless reasoning is off"""
 import os
 
 
@@ -27,3 +30,9 @@ def client(role=None):
 
 def model(role=None):
     return _get(role, "MODEL", "llama-3.3-70b-versatile")
+
+
+def extra(role):
+    """Extra request parameters for one role, e.g. {"reasoning_effort": "none"} from AGENT_REASONING_EFFORT."""
+    v = os.environ.get(f"{role.upper()}_REASONING_EFFORT") if role else None
+    return {"reasoning_effort": v} if v else {}

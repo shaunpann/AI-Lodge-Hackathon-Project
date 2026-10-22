@@ -81,7 +81,7 @@ def ask_attacker(goal, history, tries=3):
     for _ in range(tries):
         try:
             r = llm.client("attacker").chat.completions.create(
-                model=llm.model("attacker"),
+                model=llm.model("attacker"), **llm.extra("attacker"),
                 messages=[{"role": "system", "content": ATTACKER_SYSTEM},
                           {"role": "user", "content": attacker_prompt(goal, history)}])
             txt = r.choices[0].message.content or ""

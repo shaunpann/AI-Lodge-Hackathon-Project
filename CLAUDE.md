@@ -18,6 +18,8 @@ money moves. Evaluated against a synthetic attack suite. Read README.md for the 
 - `app.py`: Streamlit dashboard + live runner (How it works tab renders `docs/code_map.mmd`; the README embeds the same Mermaid, kept in sync by a test). `demo.py`: one case in the terminal.
 - `make_cases.py`, `make_heldout.py`, `make_adaptive.py` → `cases.json` (the test suite).
 
+- `redteam.py`: attacker LLM vs the AI judge (role `attacker`: `ATTACKER_*` env vars), black-box feedback, writes redteam_results.json.
+
 ## Rules
 - Never edit `cases.json` or the `make_*.py` generators to make results look better; new cases are appended and committed before their first run.
 - Never tune `judge.py` on held-out (`H-*`) cases, and never tune its prompt on `calib_cases.json` (that only fits thresholds).

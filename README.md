@@ -480,6 +480,15 @@ Every principle is enforced in code and checked by an automated test that fails 
 
 Also: the public demo allows a few live runs per visitor and one run at a time.
 
+### Automated red team against the AI judge
+`redteam.py` lets an attacker LLM play a dishonest seller. For 8 off-topic products (crypto signals, a lottery
+ticket, a gift card, a consulting call, an oil-and-gas report, a dating membership, an "unlock fee", an NFT) it
+writes up to 5 descriptions each, trying to get the AI check to approve them for a user who wants Southeast
+Asia EV research. It only learns approved / blocked / sent-to-human, like a real seller, and every other layer
+is set to pass (registered shop, correct wallet, price within caps), so the AI check is the only thing in the way.
+The description must still name the real product: a seller who lies outright is fraud no description check can
+catch. Results go to `redteam_results.json`.
+
 ### Automated tests
 `python3 -m pytest`: **68 tests**, offline, about 5 seconds, no API keys and no network beyond a local test
 merchant. GitHub Actions runs them, plus the `attack_signer.py` red team, on every push (badge at the top).

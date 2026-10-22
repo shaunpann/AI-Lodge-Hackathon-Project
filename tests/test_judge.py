@@ -31,7 +31,7 @@ def test_score_is_mean_vote(mandate):
 
 
 def test_errors_never_count_as_approval(mandate):
-    s, _ = judge.score(ACC, mandate, 5, ask=votes("error", "error", "error", "error", "error"))
+    s, _ = judge.score(ACC, mandate, 5, ask=lambda a, m: ("error", "down"))  # errors persist through retries
     assert s == 0.5
 
 
@@ -110,3 +110,22 @@ def test_regression_padding_past_the_window_goes_to_a_human_not_approved(monkeyp
 def test_bundles_must_fit_in_every_part():
     """Red-team finding: 'EV research bundle: market report plus a consulting call' was approved."""
     assert "every part must fit the purpose" in judge.SYSTEM
+
+
+def test_regression_one_api_error_is_retried_not_counted(mandate):
+    """Calibration finding: votes 'a a a a e' blocked a genuine purchase under the 5/5 threshold."""
+    import threading
+    calls, lock = {"n": 0}, threading.Lock()
+
+    def flaky(acc, man):
+        with lock:
+            calls["n"] += 1
+            first = calls["n"] == 1
+        return ("error", "timeout") if first else ("approve", "ok")
+    s, votes = judge.score(ACC, mandate, 5, ask=flaky)
+    assert s == 1.0 and all(v == "approve" for v, _ in votes)
+
+
+def test_persistent_errors_still_fail_closed(mandate):
+    s, votes = judge.score(ACC, mandate, 5, ask=lambda a, m: ("error", "down"))
+    assert s == 0.5 and judge.decide(s, {"approve_at": 1.0, "reject_at": 0.4}) == "uncertain"

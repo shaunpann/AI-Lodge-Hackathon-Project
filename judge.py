@@ -72,8 +72,19 @@ def score(accepted, mandate, k=None, ask=None):
     """Ask k times in parallel. Returns (score 0..1, list of (verdict, reason))."""
     k = k or int(os.environ.get("JUDGE_SAMPLES", thresholds()["samples"]))
     ask = ask or ask_once
+    retries = int(os.environ.get("JUDGE_ERROR_RETRIES", "2"))
+
+    def one(_):
+        # An API error is not a vote. Retry it, so one failed call cannot block a genuine purchase under the strict
+        # threshold; if it still fails, it counts as 0.5 (never as approval), so failing closed is unchanged.
+        v = ask(accepted, mandate)
+        for _ in range(retries):
+            if v[0] != "error":
+                break
+            v = ask(accepted, mandate)
+        return v
     with ThreadPoolExecutor(max_workers=k) as ex:
-        votes = list(ex.map(lambda _: ask(accepted, mandate), range(k)))
+        votes = list(ex.map(one, range(k)))
     s = sum(VOTE.get(v, 0.5) for v, _ in votes) / k
     return round(s, 3), votes
 

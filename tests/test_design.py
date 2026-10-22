@@ -26,3 +26,9 @@ def test_no_secrets_committed():
             assert not api_key.search(text), f"possible API key in {p}"
             if p not in ("onchain_proof.json", "README.md"):  # these two hold public transaction hashes
                 assert not hex64.search(text), f"possible private key in {p}"
+
+
+def test_readme_code_map_matches_source():
+    """The README embeds docs/code_map.mmd (GitHub only renders inline Mermaid); keep the two in sync."""
+    src = open("docs/code_map.mmd").read().strip()
+    assert src in open("README.md").read()

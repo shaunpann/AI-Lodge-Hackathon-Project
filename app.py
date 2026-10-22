@@ -444,6 +444,30 @@ Anything uncertain is blocked or sent to a human.
 """)
     st.caption("Principle: the AI advises, code decides, and everything fails safe.")
 
+    st.markdown("### Code map")
+    st.caption("Every box is a file in the repo. Amber = firewall · green = authorization · rose = test shop · "
+               "indigo = evaluation. Made with GitDiagram; the facilitator is not built (payments are mocked) and "
+               "human approval is a terminal prompt for now.")
+    try:
+        code_map = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs", "code_map.mmd")).read()
+    except OSError:
+        code_map = ""
+    if code_map:
+        import html as _html
+        import streamlit.components.v1 as components
+        components.html(f"""
+<div style="background:#f8fafc;border-radius:16px;padding:16px">
+  <pre class="mermaid">{_html.escape(code_map)}</pre>
+</div>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({{ startOnLoad: true, theme: "base", securityLevel: "strict",
+    flowchart: {{ useMaxWidth: true, curve: "basis" }},
+    themeVariables: {{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: "14px" }} }});
+</script>""", height=720, scrolling=True)
+        st.caption("Zoom and pan it on GitHub (README, Code map) · read the code: [github.com/shaunpann/AI-Lodge-Hackathon-Project]"
+                   "(https://github.com/shaunpann/AI-Lodge-Hackathon-Project)")
+
 # ================================================================ audit trail
 with tab_log:
     st.markdown("### Every payment decision, with the reason")

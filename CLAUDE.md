@@ -15,7 +15,7 @@ money moves. Evaluated against a synthetic attack suite. Read README.md for the 
 - `llm.py`: OpenAI-compatible client. `LLM_*` env vars; `AGENT_*` / `JUDGE_*` override per role.
 - `merchant.py`: FastAPI test server on port 8402: legit shops, attack routes, `/custom/*` (user-built attacks), `/ledger` (ground truth).
 - `eval.py`: runs cases.json in modes off/prompt/on, grades from the ledger, writes results.json + logs.jsonl.
-- `app.py`: Streamlit dashboard + live runner. `demo.py`: one case in the terminal.
+- `app.py`: Streamlit dashboard + live runner (How it works tab renders `docs/code_map.mmd`; the README embeds the same Mermaid, kept in sync by a test). `demo.py`: one case in the terminal.
 - `make_cases.py`, `make_heldout.py`, `make_adaptive.py` → `cases.json` (the test suite).
 
 ## Rules

@@ -294,6 +294,8 @@ python3 eval.py               # full evaluation: 43 cases x 3 modes (~25 min)
 python3 demo.py A10-retry-1   # one case in the terminal, firewall off then on
 pip install pytest && python3 -m pytest   # 90 offline tests, ~5 s, no keys needed
 REPEAT=3 MODES=prompt,on python3 eval.py # repeat runs, reports successful attacks per run
+PARALLEL=1 python3 eval.py               # each mode in its own process at once, ~2-3x faster
+REDTEAM_WORKERS=4 python3 redteam.py     # red-team goals in parallel (default 4)
 
 # Hardening (optional)
 python3 calibrate.py          # fit the AI check's confidence thresholds (60 cases x 5 samples)

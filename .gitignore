@@ -7,3 +7,4 @@ logs.jsonl
 signer_audit.jsonl
 .streamlit/secrets.toml
 .venv/
+.eval_part_*

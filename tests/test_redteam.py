@@ -47,3 +47,21 @@ def test_invalid_attempts_are_not_counted_as_blocks():
     rows = redteam.run([GOAL], 2, lambda g, h: "EV report", lambda acc: {"verdict": "reject"}, log=lambda *a: None)
     s = redteam.summarise(rows, [GOAL])
     assert s["valid_attempts"] == 0 and s["invalid_attempts"] == 2 and s["blocked"] == 0
+
+
+def test_goals_run_in_parallel_but_results_stay_in_goal_order():
+    import threading, time
+    active, peak, lock = [0], [0], threading.Lock()
+
+    def judge_fn(acc):
+        with lock:
+            active[0] += 1
+            peak[0] = max(peak[0], active[0])
+        time.sleep(0.05)
+        with lock:
+            active[0] -= 1
+        return {"verdict": "reject", "score": 0.0}
+    goals = redteam.GOALS[:4]
+    rows = redteam.run(goals, 2, lambda g, h: g[2][0] + " thing", judge_fn, log=lambda *a: None, workers=4)
+    assert peak[0] > 1
+    assert [r["goal"] for r in rows] == [g[0] for g in goals for _ in range(2)]

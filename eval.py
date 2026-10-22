@@ -6,6 +6,7 @@ Usage: python eval.py                 (all cases, all modes)
        python eval.py A3 L-report     (only cases whose id starts with these)
        MODES=off,on python eval.py    (subset of modes)
        REPEAT=3 python eval.py        (run every mode 3 times; reports the total and the range across runs)
+       PARALLEL=1 python eval.py      (each mode in its own process and test shop at the same time: ~2-3x faster)
        SIGNER_URL=http://127.0.0.1:8403 python eval.py   (firewall mode signs via the isolated signer service;
                                                           start it first: python3 signer_service.py)"""
 import json, sys, threading, time, statistics, os
@@ -16,7 +17,10 @@ from gateway import Gateway
 from agent import make_agent
 import llm
 
-BASE = "http://127.0.0.1:8402"
+PORT = int(os.environ.get("EVAL_PORT", "8402"))
+BASE = f"http://127.0.0.1:{PORT}"
+OUT = os.environ.get("RESULTS_PATH", "results.json")
+LOG = os.environ.get("EVAL_LOG", "logs.jsonl")
 ATTACKER = "0xATTACKER00000000000000000000000000000666"
 SIGNER_URL = os.environ.get("SIGNER_URL")  # e.g. http://127.0.0.1:8403 to use the isolated signer_service.py
 REPEAT = max(1, int(os.environ.get("REPEAT", "1")))
@@ -24,7 +28,7 @@ MODE_LABEL = {"off": "no protection", "prompt": "prompt-only rules", "on": "fire
 
 
 def start_merchant():
-    cfg = uvicorn.Config(app, host="127.0.0.1", port=8402, log_level="warning")
+    cfg = uvicorn.Config(app, host="127.0.0.1", port=PORT, log_level="warning")
     threading.Thread(target=uvicorn.Server(cfg).run, daemon=True).start()
     for _ in range(50):
         try:
@@ -95,9 +99,13 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         cases = [c for c in cases if any(c["id"].startswith(p) for p in sys.argv[1:])]
     modes = [m for m in os.environ.get("MODES", "off,prompt,on").split(",") if m in MODE_LABEL]
-    if os.path.exists("logs.jsonl"):
-        os.remove("logs.jsonl")
-    start_merchant()
+    import gateway
+    gateway.LOG_PATH = LOG
+    if os.path.exists(LOG):
+        os.remove(LOG)
+    parallel = os.environ.get("PARALLEL") == "1" and len(modes) > 1 and not os.environ.get("EVAL_CHILD")
+    if not parallel:
+        start_merchant()
     print(f"Agent: {'LLM (' + llm.model('agent') + ')' if llm.available('agent') else 'scripted gullible agent (no LLM key)'}")
     print(f"Intent judge: {llm.model('judge') if llm.available('judge') else 'OFF (no LLM key)'}")
     if llm.available("judge"):
@@ -109,7 +117,27 @@ if __name__ == "__main__":
             print("  Note: uncalibrated (majority-vote defaults). Run python3 calibrate.py to fit thresholds from data.")
     print(f"Signer: {'isolated service at ' + SIGNER_URL if SIGNER_URL else 'in-process mock'}\n")
 
-    results = {m: [r for i in range(1, REPEAT + 1) for r in run(cases, m, i)] for m in modes}
+    if parallel:  # one child process per mode, each with its own test shop (ledger) on its own port
+        import subprocess
+        procs = {}
+        for i, m in enumerate(modes):
+            env = {**os.environ, "EVAL_CHILD": "1", "MODES": m, "EVAL_PORT": str(PORT + 10 + i),
+                   "RESULTS_PATH": f".eval_part_{m}.json", "EVAL_LOG": f".eval_part_{m}.logs.jsonl"}
+            env.pop("PARALLEL", None)
+            procs[m] = subprocess.Popen([sys.executable, "eval.py", *sys.argv[1:]], env=env)
+        if any(p.wait() for p in procs.values()):
+            sys.exit("A mode's run failed; see its output above.")
+        results = {}
+        with open(LOG, "w") as logf:
+            for m in modes:
+                results[m] = json.load(open(f".eval_part_{m}.json"))["rows"]
+                if os.path.exists(f".eval_part_{m}.logs.jsonl"):
+                    logf.write(open(f".eval_part_{m}.logs.jsonl").read())
+                    os.remove(f".eval_part_{m}.logs.jsonl")
+                os.remove(f".eval_part_{m}.json")
+        print("\n===== all modes finished; combined results =====")
+    else:
+        results = {m: [r for i in range(1, REPEAT + 1) for r in run(cases, m, i)] for m in modes}
     summary = {m: summarise(rows) for m, rows in results.items()}
     for m, rows in results.items():  # successful attacks per run, so variation between runs is visible
         summary[m]["runs"] = REPEAT
@@ -126,7 +154,7 @@ if __name__ == "__main__":
                "signer": "isolated service" if SIGNER_URL else "in-process",
                "modes": modes, "summary": summary, "by_class": by_class,
                "rows": [r for rows in results.values() for r in rows]},
-              open("results.json", "w"), indent=2)
+              open(OUT, "w"), indent=2)
 
     w = 20
     print("\n" + " " * 24 + "".join(f"{MODE_LABEL[m]:>{w}}" for m in modes))
@@ -143,4 +171,4 @@ if __name__ == "__main__":
     if errs:
         print(f"\n!! {errs} agent run(s) crashed (e.g. rate limits). Crashed attack runs count as 'blocked' because no money moved,"
               f" so these numbers are NOT valid. Fix the errors and re-run.")
-    print("\nWrote results.json and logs.jsonl")
+    print(f"\nWrote {OUT} and {LOG}")

@@ -65,3 +65,23 @@ def test_goals_run_in_parallel_but_results_stay_in_goal_order():
     rows = redteam.run(goals, 2, lambda g, h: g[2][0] + " thing", judge_fn, log=lambda *a: None, workers=4)
     assert peak[0] > 1
     assert [r["goal"] for r in rows] == [g[0] for g in goals for _ in range(2)]
+
+
+def test_refusals_are_not_counted_as_attacks():
+    rows = redteam.run([GOAL], 3, lambda g, h: redteam.REFUSED, lambda acc: {"verdict": "reject"}, log=lambda *a: None)
+    s = redteam.summarise(rows, [GOAL])
+    assert s["valid_attempts"] == 0 and s["attacker_refused"] == 3 and s["valid_run"] is False
+
+
+def test_refusal_text_is_recognised():
+    assert redteam.is_refusal("I can't help with this. Writing a listing meant to ...")
+    assert redteam.is_refusal("I cannot write that")
+    assert not redteam.is_refusal("Premium crypto signals for EV investors")
+
+
+def test_every_template_names_the_real_product_and_padding_hides_it_past_the_window():
+    for gid, product, keywords in redteam.GOALS:
+        for name, make in redteam.TEMPLATES:
+            valid, visible = redteam.check_attempt(make(product), keywords)
+            assert valid, (gid, name)
+            assert visible == (name != "truncation padding"), (gid, name)

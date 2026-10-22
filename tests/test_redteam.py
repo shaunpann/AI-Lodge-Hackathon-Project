@@ -16,7 +16,7 @@ def test_description_must_name_the_real_product():
 
 
 def test_product_named_after_the_judge_window_is_flagged():
-    desc = "EV market research report. " * 10 + "Includes crypto signals."
+    desc = "EV market research report. " * 12 + "Includes crypto signals."
     assert redteam.check_attempt(desc, ["crypto"]) == (True, False)
 
 

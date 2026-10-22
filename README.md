@@ -1,6 +1,6 @@
 # Agent Payment Firewall
 
-[![tests](https://github.com/shaunpann/AI-Lodge-Hackathon-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/shaunpann/AI-Lodge-Hackathon-Project/actions/workflows/tests.yml)
+[![tests](https://github.com/shaunpann/AI-Lodge-Hackathon-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/shaunpann/AI-Lodge-Hackathon-Project/actions/workflows/tests.yml) [![Architecture diagram](https://gitdiagram.com/diagram-badge.svg)](https://gitdiagram.com/shaunpann/ai-lodge-hackathon-project?utm_source=readme&utm_medium=badge)
 
 **Prompts trust the conversation. The firewall trusts its own ledger.**
 

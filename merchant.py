@@ -8,7 +8,9 @@ import base64, json, hmac, hashlib, os
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
 
-SECRET = os.environ.get("SIGNER_SECRET", "dev-secret-change-me").encode()
+import keys
+SECRET = keys.dev_hmac_secret()      # shared with the in-process MOCK signer only
+SIGNER_PUB = keys.load_public("signer")  # isolated signer: merchant verifies with its PUBLIC key, holds no secret
 app = FastAPI()
 LEDGER = []  # every settled payment, so eval can see what actually got paid
 
@@ -34,8 +36,11 @@ def verify(request: Request, expected: dict):
         return False
     try:
         p = json.loads(base64.b64decode(h))
-        body = json.dumps(p["payload"], sort_keys=True).encode()
-        ok = hmac.compare_digest(p["signature"], hmac.new(SECRET, body, hashlib.sha256).hexdigest())
+        if p.get("alg") == "ed25519":  # from the isolated signer service
+            ok = keys.verify(SIGNER_PUB, p["payload"], p["signature"])
+        else:  # in-process mock signer
+            body = json.dumps(p["payload"], sort_keys=True).encode()
+            ok = hmac.compare_digest(p["signature"], hmac.new(SECRET, body, hashlib.sha256).hexdigest())
         pl = p["payload"]
         ok = ok and pl["payTo"] == expected["payTo"] and float(pl["amount"]) >= float(expected["maxAmountRequired"])
         if ok:

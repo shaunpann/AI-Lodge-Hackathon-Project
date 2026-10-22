@@ -133,8 +133,10 @@ sequenceDiagram
 3. The **intent checker** (LLM) answers the one question code cannot: *is this item what the user asked for?*
    It sees only the mandate and the parsed payment fields, never the web page, so a malicious page cannot talk
    to it. It can block or escalate, but never override a rule.
-4. The **signer** is the only component with the key and enforces its own hard caps, so even a compromised
-   gateway cannot drain the wallet.
+4. The **signer** is the only component with the key. In the hardened setup it runs as a **separate process**
+   that re-checks every payment against the *user-signed* mandate, its own registry and its own ledger, and
+   needs a *human-signed* approval above the threshold, so a fully compromised gateway still cannot pay an
+   attacker or exceed the budget (see [Hardening](#hardening-calibrated-ai-check-and-isolated-signer)).
 
 Principle: **the LLM advises, code decides, and everything fails closed.**
 
@@ -142,7 +144,8 @@ Principle: **the LLM advises, code decides, and everything fails closed.**
 Cut to fit a one-day solo build; listed so the diagram above stays honest:
 - **Policy compiler:** LLM that turns a plain-English mandate into structured rules (mandate is set in config today).
 - **Taint tracking:** labelling untrusted data inside the agent's context (the gateway gates the *payment*, not the data flow).
-- **Out-of-band human approval** (e.g. Telegram with strong authentication); today "no human present" means deny.
+- **Out-of-band human approval channel** (e.g. a phone passkey prompt). The approval *format* is built and
+  enforced (Ed25519 signature bound to one payment); the phone app that collects it is not.
 - **Real on-chain settlement** on Base Sepolia via an x402 facilitator.
 
 ## 3. Key Features
@@ -163,7 +166,7 @@ Cut to fit a one-day solo build; listed so the diagram above stays honest:
 | Where | Model | Role | Trust level |
 |---|---|---|---|
 | **The agent** (`agent.py`) | Claude Haiku (also tested: gpt-oss-20b) | Tool-calling agent that browses and buys content for the user | Untrusted: no key, every payment checked |
-| **Intent checker** (`judge.py`) | Claude Haiku | Judges whether the item type fits the user's stated purpose | Advisory: can block or escalate, never override a rule |
+| **Intent checker** (`judge.py`) | Claude Haiku | Judges whether the item type fits the user's stated purpose; asked 5 times, agreement = confidence score, thresholds calibrated on a labelled set | Advisory: can block or escalate, never override a rule |
 | **Prompt-only baseline** (`agent.py`, `guardrails=True`) | Claude Haiku | Same agent told every rule in its prompt, used to measure what prompting alone achieves | Comparison only |
 
 Why this is more than an LLM wrapper: the LLM is boxed in by code. It sees only structured payment fields, not
@@ -204,6 +207,13 @@ export LLM_MODEL="claude-haiku-5-5"
 streamlit run app.py          # dashboard + live attack runner at http://localhost:8501
 python3 eval.py               # full evaluation: 43 cases x 3 modes (~25 min)
 python3 demo.py A10-retry-1   # one case in the terminal, firewall off then on
+
+# Hardening (optional)
+python3 calibrate.py          # fit the AI check's confidence thresholds (60 cases x 5 samples)
+python3 keys.py init          # create user / approver / signer keys in .keys/ (gitignored)
+python3 attack_signer.py      # red-team the isolated signer as a compromised gateway
+python3 signer_service.py &   # run the isolated signer, then:
+SIGNER_URL=http://127.0.0.1:8403 python3 eval.py
 ```
 
 Optional: test a different agent model while the intent checker stays on Claude with `AGENT_API_KEY`,
@@ -211,6 +221,75 @@ Optional: test a different agent model while the intent checker stays on Claude 
 intent checker is off, which is useful for checking the plumbing.
 
 On Streamlit Community Cloud, put the three `LLM_*` values in the app's **Secrets** settings. Never commit keys.
+
+## Hardening: calibrated AI check and isolated signer
+
+Two weaknesses of the hackathon version, fixed after submission.
+
+### 1. The AI check now has a measured confidence score
+**Before:** the intent checker answered once with `approve` / `reject` / `uncertain`; "uncertain" was the
+model's own call, with no number behind it.
+
+**Now** (`judge.py`, `calibrate.py`):
+- The same question is asked **5 times in parallel**. Each answer is a vote (approve 1, uncertain 0.5,
+  reject 0, error 0.5) and the **confidence score is the average**. This is agreement between independent
+  samples, not the model's self-reported certainty, which LLMs are poorly calibrated at.
+- The cut-offs are **measured, not picked**: `calib_cases.json` holds 60 hand-labelled payment requests
+  (approve / reject / "a human should be asked") across five purposes that are *not* the eval's, split into a
+  fit half and a test half. On the fit half, `calibrate.py` enforces two hard requirements: **no genuine
+  purchase is blocked** and **no clearly wrong purchase is auto-approved**. The approve threshold goes halfway
+  into the gap between the highest-scoring wrong purchase and the lowest-scoring genuine one; reject is at most
+  0.4. If the two overlap, no threshold can satisfy both: safety wins and the overlapping cases are printed.
+  Ambiguous cases are a soft goal (ideally sent to a human), and how many get auto-approved is reported.
+- Results are reported on the **test half**, with the 95% upper bound on the false-approval rate.
+- Without `calibration.json`, the default is a majority vote (approve at >= 0.6, reject at <= 0.4), so one
+  stray "uncertain" answer out of 5 cannot block a genuine purchase.
+
+TODO: paste the test-set table from `python3 calibrate.py` here.
+
+### 2. The signer is isolated and trusts nobody upstream
+**Before:** the signer was a Python object inside the gateway's process, with a default HMAC secret. Anyone who
+compromised the gateway could call it directly.
+
+**Now** (`signer_service.py`, `keys.py`, `approver.py`): the signer is a **separate process** holding the only
+wallet key, and assumes the gateway, agent and AI judge may all be compromised.
+
+```mermaid
+flowchart LR
+    U["User device<br/>user key"] -- "signed mandate" --> G
+    H["Human's phone<br/>approver key"] -- "signed approval<br/>for ONE payment" --> G
+    G["Gateway + policy + AI judge<br/>(holds NO private key)"] -- "payment request" --> S
+    S["Signer service<br/>separate process, wallet key<br/>own registry + own ledger"] -- "Ed25519-signed payment" --> M["Merchant<br/>verifies with signer's PUBLIC key"]
+```
+
+It re-checks every request itself before signing:
+| Check | Trust source (not the gateway) |
+|---|---|
+| Spending rules (shops, caps, budget, count, threshold) | Mandate **signed by the user's key**; altering it breaks the signature |
+| Payee wallet | Signer's own `signer_registry.json` |
+| Budget, count, duplicates | Signer's own per-session ledger (with a lock, so racing requests can't both fit) |
+| Above the approval threshold | Approval **signed by the human's key**, bound to this session, payee, amount and resource |
+
+Every key is Ed25519. The signer holds only its own private key plus the user's and approver's **public**
+keys, and merchants verify payments with the signer's **public** key, so a compromised gateway holds no secret
+that can forge a mandate, an approval or a payment. The hard-coded HMAC fallback secret is gone: the
+in-process mock now generates a random secret per run.
+
+**Red-team test** (`python3 attack_signer.py`): attacks the signer directly as a fully compromised gateway:
+
+| Attack sent straight to the signer | Result |
+|---|---|
+| Raise the budget in the signed mandate / forge the mandate signature | Refused |
+| Pay the attacker's wallet, a lookalike merchant, ETH on mainnet | Refused |
+| 5.00 payment (cap 0.50), negative amount, unknown session | Refused |
+| Pay the same report twice ("payment failed, retry") | Refused |
+| Above threshold with no approval / attacker-signed approval / approval replayed from another payment or session | Refused |
+| 10 x 0.10 drain to the real merchant | 3 signed, 7 refused (loss capped at the 0.30 budget) |
+| Legitimate payment; above-threshold payment with the human's real approval (controls) | Signed |
+| Off-intent item from a registered shop within caps | Signed: **known residual risk**, bounded by the signed caps |
+
+17/17 checks behave as expected. The eval can run against the isolated signer:
+`SIGNER_URL=http://127.0.0.1:8403 python3 eval.py` (start `python3 signer_service.py` first).
 
 ## 7. AI Safety & Limitations
 
@@ -294,5 +373,10 @@ hard caps · audit log · public demo limited to a few live runs per visitor and
   defeats the payout-address check.
 - **The intent checker reads merchant-written description text** (truncated, tagged untrusted). A clever
   injection could sway it, which is why budget, registry and signer caps apply regardless.
-- **Human step-up is a placeholder** (no human means deny); a real deployment needs an out-of-band approval
-  channel with strong authentication.
+- **Human step-up has no real channel yet.** Approvals must be Ed25519-signed by the approver key and are
+  bound to one payment, but in this prototype the approver runs in the terminal, not on a phone.
+- **Keys sit on one machine in the prototype.** The isolated signer only loads its own key plus public keys,
+  but user, approver and signer keys are files in `.keys/` on the same computer; production puts them on
+  separate devices (wallet app, phone passkey, HSM).
+- **A fully compromised gateway can still buy the wrong thing from a registered shop** within the signed caps;
+  the signer cannot judge intent. Loss is bounded by the user's budget.

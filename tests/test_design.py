@@ -1,5 +1,5 @@
 """Design invariants that are easy to break by accident in a later change."""
-import re
+import os, re
 import agent
 
 
@@ -21,7 +21,7 @@ def test_no_secrets_committed():
     api_key = re.compile(r"sk-ant-[A-Za-z0-9_-]{20,}|sk-proj-[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9]{32,}|gsk_[A-Za-z0-9]{20,}")
     hex64 = re.compile(r"0x[0-9a-fA-F]{64}\b")  # a private key looks like this; so does a transaction hash
     for p in tracked:
-        if p.endswith((".py", ".md", ".json", ".toml", ".txt", ".yml")):
+        if p.endswith((".py", ".md", ".json", ".toml", ".txt", ".yml")) and os.path.exists(p):  # skip locally deleted
             text = open(p, errors="ignore").read()
             assert not api_key.search(text), f"possible API key in {p}"
             if p not in ("onchain_proof.json", "README.md"):  # these two hold public transaction hashes

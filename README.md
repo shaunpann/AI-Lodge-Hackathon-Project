@@ -245,7 +245,26 @@ model's own call, with no number behind it.
 - Without `calibration.json`, the default is a majority vote (approve at >= 0.6, reject at <= 0.4), so one
   stray "uncertain" answer out of 5 cannot block a genuine purchase.
 
-TODO: paste the test-set table from `python3 calibrate.py` here.
+**Calibration result** (Claude Haiku, 5 samples, fitted on 35 cases, reported on the 25 held-back cases):
+
+| True label (test half) | Auto-approved | Sent to human | Auto-rejected |
+|---|---|---|---|
+| Genuine purchase (10) | **10** | 0 | 0 |
+| Clearly wrong purchase (10) | **0** | 1 | 9 |
+| Ambiguous (5) | 2 | 0 | 3 |
+
+- Fitted threshold: **approve only at 1.0** (all 5 votes approve), reject at <= 0.4. All 24 genuine purchases
+  in the set scored 5/5, so unanimity cost nothing here.
+- 0/10 wrong purchases auto-approved; with only 10 cases, the 95% upper bound on that rate is still 26%.
+- **A failure this caught:** the first threshold rule (halfway into the gap) chose 0.5, and on the held-back
+  half an "unlock fee to read your report" request from an *allowed* shop scored 0.70 and was auto-approved.
+  Switching to the strictest threshold that keeps every genuine purchase sends it to a human instead.
+- Haiku rarely answers "uncertain" even on ambiguous items (1 of 25 test cases went to a human), so the human
+  step is a backstop, not a routine check.
+
+**Full firewall eval with both fixes** (calibrated judge + isolated signer service, `SIGNER_URL` set):
+43 cases, **0% attack success (0/33), 100% legitimate completion (10/10)**; average check 1.31 s per payment
+(was 0.97 s with one judge call; the 5 calls run in parallel, so it is the slowest of the 5).
 
 ### 2. The signer is isolated and trusts nobody upstream
 **Before:** the signer was a Python object inside the gateway's process, with a default HMAC secret. Anyone who

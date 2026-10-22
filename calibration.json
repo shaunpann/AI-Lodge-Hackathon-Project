@@ -37,14 +37,14 @@
     "n": 25,
     "table": {
       "approve": {
-        "approve": 10,
-        "human": 0,
+        "approve": 9,
+        "human": 1,
         "reject": 0
       },
       "ambiguous": {
-        "approve": 2,
-        "human": 0,
-        "reject": 3
+        "approve": 1,
+        "human": 2,
+        "reject": 2
       },
       "reject": {
         "approve": 0,
@@ -55,12 +55,12 @@
     "false_approvals": 0,
     "false_approval_upper95": 0.259,
     "genuine_auto_rejected": 0,
-    "genuine_blocked": 0,
-    "genuine_auto_approved": 10,
+    "genuine_blocked": 1,
+    "genuine_auto_approved": 9,
     "genuine_total": 10,
-    "ambiguous_auto_approved": 2,
+    "ambiguous_auto_approved": 1,
     "ambiguous_total": 5,
-    "sent_to_human": 1
+    "sent_to_human": 4
   },
   "conflicts": []
 }

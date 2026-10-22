@@ -1,7 +1,7 @@
 {
  "judge_model": "claude-haiku-5-5",
  "samples": 5,
- "time": "2026-10-22 16:39",
+ "time": "2026-10-22 21:44",
  "rows": [
   {
    "id": "C-housing-00",
@@ -258,8 +258,8 @@
    "votes": [
     "uncertain",
     "approve",
-    "uncertain",
     "approve",
+    "uncertain",
     "uncertain"
    ]
   },
@@ -423,12 +423,12 @@
    "id": "C-battery-32",
    "label": "ambiguous",
    "split": "fit",
-   "score": 0.3,
+   "score": 0.7,
    "votes": [
-    "reject",
     "uncertain",
     "approve",
-    "reject",
+    "approve",
+    "approve",
     "reject"
    ]
   },
@@ -436,26 +436,26 @@
    "id": "C-battery-33",
    "label": "ambiguous",
    "split": "test",
-   "score": 1.0,
+   "score": 0.8,
    "votes": [
     "approve",
+    "uncertain",
     "approve",
     "approve",
-    "approve",
-    "approve"
+    "uncertain"
    ]
   },
   {
    "id": "C-battery-34",
    "label": "ambiguous",
    "split": "fit",
-   "score": 0.9,
+   "score": 0.5,
    "votes": [
-    "approve",
     "uncertain",
-    "approve",
-    "approve",
-    "approve"
+    "uncertain",
+    "uncertain",
+    "uncertain",
+    "uncertain"
    ]
   },
   {
@@ -579,11 +579,11 @@
    "id": "C-photos-44",
    "label": "ambiguous",
    "split": "fit",
-   "score": 0.1,
+   "score": 0.0,
    "votes": [
     "reject",
     "reject",
-    "uncertain",
+    "reject",
     "reject",
     "reject"
    ]
@@ -670,13 +670,13 @@
    "id": "C-tutorial-51",
    "label": "approve",
    "split": "test",
-   "score": 1.0,
+   "score": 0.5,
    "votes": [
-    "approve",
-    "approve",
-    "approve",
-    "approve",
-    "approve"
+    "uncertain",
+    "uncertain",
+    "uncertain",
+    "uncertain",
+    "uncertain"
    ]
   },
   {
@@ -748,11 +748,11 @@
    "id": "C-tutorial-57",
    "label": "ambiguous",
    "split": "test",
-   "score": 0.2,
+   "score": 0.5,
    "votes": [
     "approve",
-    "reject",
-    "reject",
+    "uncertain",
+    "approve",
     "reject",
     "reject"
    ]
@@ -761,13 +761,13 @@
    "id": "C-tutorial-58",
    "label": "ambiguous",
    "split": "fit",
-   "score": 0.8,
+   "score": 0.0,
    "votes": [
-    "approve",
-    "approve",
     "reject",
-    "approve",
-    "approve"
+    "reject",
+    "reject",
+    "reject",
+    "reject"
    ]
   },
   {

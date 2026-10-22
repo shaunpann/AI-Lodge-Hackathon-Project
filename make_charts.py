@@ -43,27 +43,40 @@ ax.yaxis.grid(True, color=GRID); ax.set_axisbelow(True)
 ax.set_title("Same agent, same 33 attacks: who stops them?", loc="left", color=INK, fontsize=13, pad=12)
 save(fig, "asr_by_mode.png")
 
-# 2. Successful attacks by class and protection level
+# 2. Attacks STOPPED, per class and protection level (grid, so the firewall column reads as a wall of ticks)
+from matplotlib.patches import FancyBboxPatch
 bc = d["by_class"]
-classes = sorted(bc, key=lambda k: (-bc[k].get("off", 0), CLASS.get(k, k)))
-fig, ax = plt.subplots(figsize=(7.2, 0.5 * len(classes) + 1.2))
-h = 0.8 / len(MODES)
+fell = [k for k in bc if bc[k].get("off", 0) > 0]      # the agent fell for these with no protection
+resisted = [k for k in bc if bc[k].get("off", 0) == 0]  # the agent refused these on its own
+fell.sort(key=lambda k: (-bc[k].get("prompt", 0), -bc[k].get("off", 0), CLASS.get(k, k)))
+resisted.sort(key=lambda k: CLASS.get(k, k))
+GOOD_T, GOOD_I, BAD_T, BAD_I, NEU_T = "#e2f3e2", "#0b7a0b", "#f8dede", "#b02a2a", "#efeee9"
+rows = [("h", "Attacks the agent fell for without protection")] + [("c", k) for k in fell] + \
+       [("h", "Attacks the agent refused on its own (not a test of the firewall)")] + [("c", k) for k in resisted]
+fig, ax = plt.subplots(figsize=(8.6, 0.42 * len(rows) + 1.3))
+ax.set_xlim(0, 3 + 2.3); ax.set_ylim(len(rows), -1.1); ax.axis("off")
+x0 = 2.3
 for i, m in enumerate(MODES):
-    ys = [j + (i - (len(MODES) - 1) / 2) * h for j in range(len(classes))]
-    v = [bc[k].get(m, 0) for k in classes]
-    ax.barh(ys, v, height=h * 0.92, color=COLOR[m], label=LABEL[m])
-    for y, x in zip(ys, v):
-        if x:
-            ax.text(x + 0.05, y, str(x), va="center", fontsize=8, color=MUTED)
-ax.set_yticks(range(len(classes)), [CLASS.get(k, k) for k in classes])
-ax.invert_yaxis()
-ax.set_xlim(0, 3.5); ax.set_xticks([0, 1, 2, 3])
-ax.set_xlabel("Successful attacks (out of 3)")
-ax.xaxis.grid(True, color=GRID); ax.set_axisbelow(True)
-ax.legend(loc="lower right", frameon=False)
-ax.set_title("Which attacks get through", loc="left", color=INK, fontsize=13, pad=12)
-if "on" in MODES and all(bc[k].get("on", 0) == 0 for k in classes):
-    fig.text(0.01, -0.01, "Firewall: 0 successful attacks in every class (no blue bars).", fontsize=9, color=COLOR["on"])
+    ax.text(x0 + i + 0.5, -0.55, LABEL[m], ha="center", va="center", fontsize=10.5, color=INK,
+            fontweight="bold" if m == "on" else "normal")
+for r, (kind, k) in enumerate(rows):
+    y = r + 0.5
+    if kind == "h":
+        ax.text(0, y + 0.08, k, ha="left", va="center", fontsize=9.5, color=MUTED, style="italic")
+        continue
+    n = bc[k].get("n", 3)
+    ax.text(x0 - 0.12, y, CLASS.get(k, k), ha="right", va="center", fontsize=10, color=INK)
+    for i, m in enumerate(MODES):
+        got = bc[k].get(m, 0); stopped = n - got
+        dim = k in resisted
+        fill = NEU_T if dim else (GOOD_T if got == 0 else BAD_T)
+        ink = MUTED if dim else (GOOD_I if got == 0 else BAD_I)
+        ax.add_patch(FancyBboxPatch((x0 + i + 0.04, r + 0.08), 0.92, 0.84, boxstyle="round,pad=0,rounding_size=0.08",
+                                    fc=fill, ec="white", lw=2))
+        label = (f"\u2713 {stopped}/{n} stopped" if got == 0 else f"\u2717 {got}/{n} got through")
+        ax.text(x0 + i + 0.5, y, label, ha="center", va="center", fontsize=9.5, color=ink,
+                fontweight="bold" if (m == "on" and not dim) else "normal")
+ax.set_title("Attacks stopped, by attack type (3 attempts each)", loc="left", color=INK, fontsize=13, pad=4)
 save(fig, "attacks_by_class.png")
 
 # 3. Which defence layer fired on blocked payments

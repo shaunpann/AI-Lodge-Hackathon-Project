@@ -230,7 +230,7 @@ merchant's ledger of payments that actually settled, not from the firewall's own
 | False blocks | - | - | **0** |
 | Added time per payment | - | - | ~0.97 s |
 
-![Successful attacks by class](docs/attacks_by_class.png)
+![Attacks stopped by attack type](docs/attacks_by_class.png)
 
 ![Which defence layer stopped them](docs/defence_layers.png)
 

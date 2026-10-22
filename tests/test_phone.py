@@ -70,7 +70,7 @@ def test_stale_button_from_another_payment_is_ignored():
 def test_message_shows_the_exact_payment():
     _, api = ask([tap("deny")])
     text = next(p["text"] for m, p in api.calls if m == "sendMessage")
-    assert "0.28 USDC" in text and ACC["payTo"] in text and "No answer in time = denied" in text
+    assert "0.28 USDC" in text and ACC["payTo"] in text and "automatically declined" in text and "<b>PAYMENT APPROVAL NEEDED</b>" in text
 
 
 def test_phone_yes_becomes_a_signed_approval_for_this_payment(monkeypatch, tmp_path):
@@ -89,3 +89,17 @@ def test_phone_no_returns_false(monkeypatch, tmp_path):
     keys.init()
     fn = phone_approver.phone_approver(type("S", (), {"session": "abc"})(), ask=lambda a, r, timeout: False)
     assert fn(ACC, ["test"]) is False
+
+
+def test_message_shows_ai_verdict_and_confidence_in_plain_words():
+    acc = {**ACC, "_judge": {"verdict": "uncertain", "score": 0.9, "reason": "Report <b>bold</b> attempt"}}
+    text = phone_approver.describe(acc, ["intent judge unsure: confidence 0.90 (...)", "no human approval -> denied"])
+    assert "Not sure (90% confidence it matches)" in text
+    assert "wasn't sure this matches your request" in text and "no human approval" not in text
+    assert "&lt;b&gt;bold" in text  # merchant/model text is escaped, so it can't format or fake the message
+    assert "Why you" not in text
+
+
+def test_gateway_passes_the_ai_verdict_to_the_human_but_not_into_the_signed_payment():
+    acc = {**ACC, "_judge": {"verdict": "approve", "score": 1.0}}
+    assert keys.payment_digest("s", acc) == keys.payment_digest("s", ACC)

@@ -67,7 +67,9 @@ class Gateway:
                     decision, reasons = "step_up", [f"intent judge unsure: {jreason}"]
             if decision == "step_up":
                 # approve_fn returns False (deny), True (plain yes) or a signed approval token for the signer
-                approval = self.approve_fn(accepted, reasons)
+                # the human sees the AI check's verdict too; extra "_judge" key is display-only (not in the signed digest)
+                ai = {"verdict": verdict, "score": jscore, "reason": str(jreason).split("): ", 1)[-1]}
+                approval = self.approve_fn({**accepted, "_judge": ai}, reasons)
                 decision = "allow" if approval else "block"
                 reasons = reasons + ["human approved" if decision == "allow" else "no human approval -> denied"]
         check_ms = (time.perf_counter() - t0) * 1000

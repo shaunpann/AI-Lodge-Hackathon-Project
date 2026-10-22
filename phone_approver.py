@@ -2,7 +2,8 @@
 
 When a payment needs a human (the AI check is unsure, or the amount is above the approval threshold), the
 approver sends your phone the exact payment with Approve / Deny buttons and waits. Only a tap from YOUR chat
-on THIS payment's buttons counts; anything else is ignored. No tap within the timeout means deny. On Approve,
+on THIS payment's buttons counts; anything else is ignored. No tap within the timeout (5 minutes by default,
+PHONE_APPROVAL_TIMEOUT to change it) means deny. The message also shows the AI check's verdict and confidence. On Approve,
 the approver signs an approval bound to this one payment (keys.payment_digest), which the isolated signer checks.
 
 Setup (once, about 3 minutes):
@@ -17,7 +18,7 @@ Try it:
 
 Honest scope: the tap happens on your phone, but the approval KEY is held by this approver process on your
 computer (separate from the gateway). Production would keep the key on the phone itself (a passkey)."""
-import json, os, secrets, subprocess, sys, time
+import html, json, os, secrets, subprocess, sys, time
 import httpx
 import keys
 
@@ -33,21 +34,53 @@ def telegram(method, token=None, **params):
     return data["result"]
 
 
-def describe(accepted, reasons):
-    return (f"🔔 Payment approval needed\n\n"
-            f"Amount: {accepted.get('maxAmountRequired')} {accepted.get('asset')} on {accepted.get('network')}\n"
-            f"Shop: {accepted.get('merchantId')}\n"
-            f"Wallet: {accepted.get('payTo')}\n"
-            f"Item: {accepted.get('description') or accepted.get('resource')}\n\n"
-            f"Why you're asked: {'; '.join(reasons)}\n\n"
-            f"No answer in time = denied.")
+DEFAULT_TIMEOUT = int(os.environ.get("PHONE_APPROVAL_TIMEOUT", "300"))  # 5 minutes unless set
 
 
-def ask_phone(accepted, reasons, chat_id=None, timeout=90, api=telegram, clock=time.monotonic):
+def _e(x):
+    return html.escape(str(x), quote=False)
+
+
+def plain_reason(r):
+    r = str(r)
+    if "above auto-approve threshold" in r:
+        return "The amount is above your auto-approve limit"
+    if r.startswith("intent judge unsure"):
+        return "The AI check wasn't sure this matches your request"
+    return r
+
+
+def ai_line(accepted):
+    j = accepted.get("_judge") or {}
+    v, s = j.get("verdict"), j.get("score")
+    label = {"approve": "Matches your request", "uncertain": "Not sure", "reject": "Doesn't match"}.get(v)
+    if not label:
+        return "<b>AI check:</b> off"
+    conf = f" ({round(s * 100)}% confidence it matches)" if isinstance(s, (int, float)) else ""
+    line = f"<b>AI check:</b> {label}{conf}"
+    if j.get("reason"):
+        line += f"\n<b>AI says:</b> {_e(j['reason'])[:200]}"
+    return line
+
+
+def describe(accepted, reasons, timeout=DEFAULT_TIMEOUT):
+    mins = f"{timeout // 60} min" if timeout >= 60 else f"{timeout} s"
+    reasons = [x for x in reasons if not str(x).startswith(("no human approval", "human approved"))]
+    return (f"❗ <b>PAYMENT APPROVAL NEEDED</b>\n\n"
+            f"<b>Amount:</b> {_e(accepted.get('maxAmountRequired'))} {_e(accepted.get('asset'))} ({_e(accepted.get('network'))})\n"
+            f"<b>Shop:</b> {_e(accepted.get('merchantId'))}\n"
+            f"<b>Wallet:</b> <code>{_e(accepted.get('payTo'))}</code>\n"
+            f"<b>Item:</b> {_e(accepted.get('description') or accepted.get('resource'))}\n\n"
+            f"<b>Reason for review:</b> {_e('; '.join(plain_reason(x) for x in reasons))}\n"
+            f"{ai_line(accepted)}\n\n"
+            f"<i>No reply within {mins} = automatically declined.</i>")
+
+
+def ask_phone(accepted, reasons, chat_id=None, timeout=DEFAULT_TIMEOUT, api=telegram, clock=time.monotonic):
     """Send Approve/Deny buttons and wait for the matching tap. Returns True only on an explicit Approve."""
     chat_id = str(chat_id or os.environ["TELEGRAM_CHAT_ID"])
     nonce = secrets.token_hex(8)
-    msg = api("sendMessage", chat_id=chat_id, text=describe(accepted, reasons), reply_markup={"inline_keyboard": [[
+    msg = api("sendMessage", chat_id=chat_id, text=describe(accepted, reasons, timeout), parse_mode="HTML", reply_markup={"inline_keyboard": [[
         {"text": "✅ Approve", "callback_data": f"approve:{nonce}"},
         {"text": "⛔ Deny", "callback_data": f"deny:{nonce}"}]]})
     deadline, offset, answer = clock() + timeout, None, None
@@ -71,19 +104,19 @@ def ask_phone(accepted, reasons, chat_id=None, timeout=90, api=telegram, clock=t
         api("getUpdates", offset=offset, timeout=0)  # acknowledge, so old taps never replay
     verdict = "✅ Approved" if answer else ("⛔ Denied" if answer is False else "⌛ Timed out: denied")
     try:
-        api("editMessageText", chat_id=chat_id, message_id=msg["message_id"],
-            text=describe(accepted, reasons) + f"\n\n{verdict}")
+        api("editMessageText", chat_id=chat_id, message_id=msg["message_id"], parse_mode="HTML",
+            text=describe(accepted, reasons, timeout) + f"\n\n<b>{verdict}</b>")
     except Exception:
         pass
     return bool(answer)
 
 
-def phone_approver(signer, timeout=90, ask=ask_phone):
+def phone_approver(signer, timeout=DEFAULT_TIMEOUT, ask=ask_phone):
     """approve_fn for the gateway: phone tap, then a signed approval bound to this payment and session."""
     key = keys.load_private("approver")
 
     def approve(accepted, reasons):
-        print(f"  📱 Waiting for your phone ({timeout}s)…")
+        print(f"  📱 Waiting for your phone (up to {timeout}s)…")
         if not ask(accepted, reasons, timeout=timeout):
             print("  📱 Denied (or no answer).")
             return False

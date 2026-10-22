@@ -453,17 +453,27 @@ Anything uncertain is blocked or sent to a human.
     except OSError:
         code_map = ""
     if code_map:
-        import html as _html
         import streamlit.components.v1 as components
+        # The diagram goes in as a JSON string, never as HTML text, so no escaping step can corrupt it.
+        src = json.dumps(code_map).replace("</", "<\\/")
         components.html(f"""
-<div style="background:#f8fafc;border-radius:16px;padding:16px">
-  <pre class="mermaid">{_html.escape(code_map)}</pre>
-</div>
+<div id="map" style="background:#f8fafc;border-radius:16px;padding:16px;color:#334155;font-family:Helvetica,Arial,sans-serif">Loading diagram…</div>
 <script type="module">
   import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({{ startOnLoad: true, theme: "base", securityLevel: "strict",
+  mermaid.initialize({{ startOnLoad: false, theme: "base", securityLevel: "strict",
     flowchart: {{ useMaxWidth: true, curve: "basis" }},
     themeVariables: {{ fontFamily: "Helvetica, Arial, sans-serif", fontSize: "14px" }} }});
+  const box = document.getElementById("map");
+  // Streamlit loads this frame while its tab is still hidden, and Mermaid cannot lay out text at zero size
+  // (that is what showed up as "Syntax error in text"). So wait until the frame is actually visible.
+  const visible = () => window.innerWidth > 0 && box.getBoundingClientRect().width > 0;
+  while (!visible()) await new Promise(r => setTimeout(r, 250));
+  try {{
+    const {{ svg }} = await mermaid.render("codemap", {src});
+    box.innerHTML = svg;
+  }} catch (e) {{
+    box.textContent = "Diagram failed to render: " + (e && e.message ? e.message : e);
+  }}
 </script>""", height=720, scrolling=True)
         st.caption("Zoom and pan it on GitHub (README, Code map) · read the code: [github.com/shaunpann/AI-Lodge-Hackathon-Project]"
                    "(https://github.com/shaunpann/AI-Lodge-Hackathon-Project)")

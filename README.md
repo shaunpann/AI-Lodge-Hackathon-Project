@@ -1,5 +1,7 @@
 # Agent Payment Firewall
 
+[![tests](https://github.com/shaunpann/AI-Lodge-Hackathon-Project/actions/workflows/tests.yml/badge.svg)](https://github.com/shaunpann/AI-Lodge-Hackathon-Project/actions/workflows/tests.yml)
+
 **Prompts trust the conversation. The firewall trusts its own ledger.**
 
 A firewall between an AI agent and its wallet. The agent never holds a key: every payment it tries to make
@@ -207,6 +209,7 @@ export LLM_MODEL="claude-haiku-5-5"
 streamlit run app.py          # dashboard + live attack runner at http://localhost:8501
 python3 eval.py               # full evaluation: 43 cases x 3 modes (~25 min)
 python3 demo.py A10-retry-1   # one case in the terminal, firewall off then on
+pip install pytest && python3 -m pytest   # 67 offline tests, ~5 s, no keys needed
 
 # Hardening (optional)
 python3 calibrate.py          # fit the AI check's confidence thresholds (60 cases x 5 samples)
@@ -377,10 +380,30 @@ This is a direct testnet transfer triggered by the firewall's decision (not yet 
 - Crashed agent runs are flagged and invalidate a run, since "no money moved" would otherwise look like a block.
 - The live dashboard lets anyone write their own attack.
 
-### Guardrails implemented
-Agent holds no key · deterministic policy engine · merchant registry · budget and count caps · duplicate-charge
-check · isolated intent checker with untrusted-text tagging · fail-closed on errors · human step-up · signer
-hard caps · audit log · public demo limited to a few live runs per visitor and one run at a time.
+### Safety principles, mapped to code and tests
+Every principle is enforced in code and checked by an automated test that fails if the rule is removed.
+
+| # | Principle | Enforced in | Tested by |
+|---|---|---|---|
+| P1 | **The agent holds no key.** Its only tools are read and pay-through-the-gateway. | `agent.py` (`TOOLS`), `gateway.py` | `test_design.py::test_agent_only_has_gateway_tools`, `::test_agent_and_gateway_never_load_private_keys` |
+| P2 | **Code decides; AI can only say no.** The judge and the human can block or escalate, never override a rule. | `gateway.py` (`paid_fetch`), `policy.py` | `test_gateway.py::test_judge_cannot_override_a_rule`, `::test_human_cannot_override_a_rule` |
+| P3 | **Trust own records, not the conversation.** Payee from our registry, duplicates from our ledger. | `policy.py` (`MERCHANT_REGISTRY`, `paid_resources`) | `test_policy.py` (one test per block reason), `test_gateway.py::test_fake_retry_is_paid_only_once` |
+| P4 | **Fail closed.** Errors, garbled output and no human answer all mean no. | `judge.py` (`ask_once`, `VOTE`), `gateway.py` (`approve_fn` default) | `test_judge.py::test_api_failure_fails_closed`, `::test_errors_never_count_as_approval`, `test_gateway.py::test_judge_unsure_with_no_human_is_denied` |
+| P5 | **Calibrated escalation.** The AI check's thresholds are fitted on labelled data, never picked by feel. | `judge.py` (`score`, `decide`), `calibrate.py` (`fit`) | `test_calibrate.py`, incl. `::test_regression_unlock_fee_at_0_7_is_not_auto_approved` |
+| P6 | **Untrusted text is data.** Merchant text is truncated, tagged untrusted and never reaches policy. | `judge.py` (`_prompt`), `policy.py` | `test_judge.py::test_merchant_text_is_wrapped_as_untrusted_and_truncated`, `test_policy.py::test_merchant_text_cannot_change_the_decision` |
+| P7 | **Independent signer.** A separate process re-checks a user-signed mandate, its own registry and ledger, and human-signed approvals. | `signer_service.py`, `keys.py`, `approver.py` | `test_signer.py` (forged mandate, attacker wallet, replayed approval, drain, double charge), `attack_signer.py` in CI |
+| P8 | **Full audit trail.** Every decision is logged with its reasons, by both the gateway and the signer. | `gateway.py` (`_log`), `signer_service.py` (`audit`) | `test_gateway.py::test_every_decision_is_logged_with_reasons`, `test_signer.py::test_every_decision_is_audited` |
+| P9 | **No secrets in the repo.** Keys only from env, Streamlit Secrets or gitignored files. | `.gitignore`, `keys.py` | `test_design.py::test_no_secrets_committed`, `test_signer.py::test_mock_signer_has_no_guessable_secret` |
+
+Also: the public demo allows a few live runs per visitor and one run at a time.
+
+### Automated tests
+`python3 -m pytest`: **67 tests**, offline, about 5 seconds, no API keys and no network beyond a local test
+merchant. GitHub Actions runs them, plus the `attack_signer.py` red team, on every push (badge at the top).
+The models are replaced by scripted votes in tests; the measured model behaviour is in the evaluation above.
+To check the tests have teeth, each core rule was deleted in turn (duplicate check, registry check, signer
+registry, signer ledger, mandate signature, human approval signature, no-human-means-no, error votes, judge
+reject, calibration rule): **every one of the 10 deletions made a test fail.**
 
 ### Limitations and risks
 - **Settlement is mocked.** An HMAC signature stands in for the on-chain payment and the x402 facilitator;

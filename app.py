@@ -449,7 +449,7 @@ Anything uncertain is blocked or sent to a human.
         '<p style="font-size:0.875rem;opacity:0.85">Every box is a file in the repo. '
         '<span style="color:#f59e0b;font-weight:600">Amber</span> = firewall, '
         '<span style="color:#22c55e;font-weight:600">green</span> = authorization, '
-        '<span style="color:#fb7185;font-weight:600">rose</span> = test shop, '
+        '<span style="color:#fb7185;font-weight:600">rose</span> = shop and settlement, '
         '<span style="color:#818cf8;font-weight:600">indigo</span> = evaluation. Made with GitDiagram.</p>',
         unsafe_allow_html=True)
     try:

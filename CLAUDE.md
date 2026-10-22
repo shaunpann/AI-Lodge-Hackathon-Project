@@ -20,11 +20,13 @@ money moves. Evaluated against a synthetic attack suite. Read README.md for the 
 
 - `redteam.py`: attacker LLM vs the AI judge (role `attacker`: `ATTACKER_*` env vars), black-box feedback, writes redteam_results.json.
 
+- `phone_approver.py`: Telegram Approve/Deny step-up (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`); `setup` and `demo` commands.
+
 ## Rules
 - Never edit `cases.json` or the `make_*.py` generators to make results look better; new cases are appended and committed before their first run.
 - Never tune `judge.py` on held-out (`H-*`) cases, and never tune its prompt on `calib_cases.json` (that only fits thresholds).
 - Never commit `.keys/`; the signer service must never import `policy.py` (its checks are independent on purpose).
-- Never commit API keys; keys come from env vars or Streamlit Secrets.
+- Never commit API keys or the Telegram bot token; keys come from env vars or Streamlit Secrets.
 - Don't run `eval.py` while the dashboard's live runner is in use (both use port 8402).
 - Model API notes: Claude rejects `temperature`; its OpenAI-compatible endpoint ignores `response_format`, so judge output is parsed with a regex.
 

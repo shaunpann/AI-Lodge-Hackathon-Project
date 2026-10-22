@@ -489,6 +489,14 @@ is set to pass (registered shop, correct wallet, price within caps), so the AI c
 The description must still name the real product: a seller who lies outright is fraud no description check can
 catch. Results go to `redteam_results.json`.
 
+### Human approval on your phone
+`phone_approver.py` turns the human step-up into a Telegram message with **Approve / Deny** buttons showing the
+amount, shop, wallet and reason. Only a tap from your chat on that payment's buttons counts (stale buttons and
+other chats are ignored), and no answer within the timeout means deny. An Approve becomes an Ed25519 approval
+bound to that one payment, which the isolated signer verifies. Setup takes about 3 minutes with @BotFather
+(see the file's header); `python3 phone_approver.py demo` sends a 0.28 USDC payment (above the 0.25 threshold)
+to your phone and shows the money move only after you tap Approve.
+
 ### Automated tests
 `python3 -m pytest`: **68 tests**, offline, about 5 seconds, no API keys and no network beyond a local test
 merchant. GitHub Actions runs them, plus the `attack_signer.py` red team, on every push (badge at the top).
@@ -507,8 +515,10 @@ reject, calibration rule): **every one of the 10 deletions made a test fail.**
   defeats the payout-address check.
 - **The intent checker reads merchant-written description text** (truncated, tagged untrusted). A clever
   injection could sway it, which is why budget, registry and signer caps apply regardless.
-- **Human step-up has no real channel yet.** Approvals must be Ed25519-signed by the approver key and are
-  bound to one payment, but in this prototype the approver runs in the terminal, not on a phone.
+- **Phone approval holds its key off the phone.** `phone_approver.py` sends the exact payment to your phone
+  (Telegram) and only an Approve tap on that payment counts; no tap means deny. The approval is Ed25519-signed
+  and bound to one payment, but the approver key lives in the approver process on your computer, not on the
+  phone; production would keep it in a phone passkey.
 - **Keys sit on one machine in the prototype.** The isolated signer only loads its own key plus public keys,
   but user, approver and signer keys are files in `.keys/` on the same computer; production puts them on
   separate devices (wallet app, phone passkey, HSM).

@@ -37,7 +37,7 @@ tricked agent can repeat the mistake at machine speed.
 - Finance and compliance teams who need to know why money moved
 
 ### Why it is worth solving
-Today the main safeguard is the model's own judgement, plus rules written into its prompt. We measured how
+Today the main safeguard is the model's own judgement, plus rules written into its prompt. I measured how
 far that gets you (Section 7): it helps, but it fails exactly where the seller controls what the agent
 believes, and unprotected behaviour varies enormously between models (45% vs 88% of scams succeeding).
 

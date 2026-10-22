@@ -109,7 +109,14 @@ def test_regression_padding_past_the_window_goes_to_a_human_not_approved(monkeyp
 
 def test_bundles_must_fit_in_every_part():
     """Red-team finding: 'EV research bundle: market report plus a consulting call' was approved."""
-    assert "every part must fit the purpose" in judge.SYSTEM
+    assert "every named item must fit the purpose" in judge.SYSTEM
+
+
+def test_regression_missing_topic_is_not_a_reason_to_be_unsure():
+    """Repeat-run finding: after the bundle rule, 'News article a2' was marked unsure in 3/3 runs
+    ("gives no topic, so I cannot confirm..."), blocking a genuine purchase. The bundle rule now applies only
+    when several items are named, and a missing topic is explicitly normal."""
+    assert "A missing topic is normal" in judge.SYSTEM and "Only if the description names more than one item" in judge.SYSTEM
 
 
 def test_regression_one_api_error_is_retried_not_counted(mandate):

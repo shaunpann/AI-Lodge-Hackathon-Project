@@ -27,6 +27,7 @@ money moves. Evaluated against a synthetic attack suite. Read README.md for the 
 - Model API notes: Claude rejects `temperature`; its OpenAI-compatible endpoint ignores `response_format`, so judge output is parsed with a regex.
 
 ## Commands
+- `python3 -m pytest` (offline, no keys; must stay green; add a test with every new rule)
 - `python3 eval.py [case-id-prefixes]`; `MODES=off,on python3 eval.py` for a subset of modes.
 - `streamlit run app.py`
 - `python3 demo.py A10-retry-1`

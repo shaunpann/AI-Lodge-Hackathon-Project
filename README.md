@@ -292,7 +292,7 @@ export LLM_MODEL="claude-haiku-5-5"
 streamlit run app.py          # dashboard + live attack runner at http://localhost:8501
 python3 eval.py               # full evaluation: 43 cases x 3 modes (~25 min)
 python3 demo.py A10-retry-1   # one case in the terminal, firewall off then on
-pip install pytest && python3 -m pytest   # 96 offline tests, ~5 s, no keys needed
+pip install pytest && python3 -m pytest   # 98 offline tests, ~5 s, no keys needed
 REPEAT=3 MODES=prompt,on python3 eval.py # repeat runs, reports successful attacks per run
 PARALLEL=1 python3 eval.py               # each mode in its own process at once, ~2-3x faster
 REDTEAM_WORKERS=4 python3 redteam.py     # red-team goals in parallel (default 4)
@@ -334,16 +334,22 @@ model's own call, with no number behind it.
 - Without `calibration.json`, the default is a majority vote (approve at >= 0.6, reject at <= 0.4), so one
   stray "uncertain" answer out of 5 cannot block a genuine purchase.
 
-**Calibration result** (Claude Haiku, 5 samples, fitted on 35 cases, reported on the 25 held-back cases):
+**Calibration result** (Claude Haiku, 5 samples, fitted on 35 cases, reported on the 25 held-back cases).
+Current judge, after the red-team fixes (no truncation, bundle rule, API errors retried):
 
 | True label (test half) | Auto-approved | Sent to human | Auto-rejected |
 |---|---|---|---|
-| Genuine purchase (10) | **10** | 0 | 0 |
+| Genuine purchase (10) | **9** | 1 | 0 |
 | Clearly wrong purchase (10) | **0** | 1 | 9 |
-| Ambiguous (5) | 2 | 0 | 3 |
+| Ambiguous (5) | 1 | 2 | 2 |
 
-- Fitted threshold: **approve only at 1.0** (all 5 votes approve), reject at <= 0.4. All 24 genuine purchases
-  in the set scored 5/5, so unanimity cost nothing here.
+The genuine item sent to a human is a listing called only "Tutorial"; before the bundle rule it scored 5/5. The
+threshold was left as fitted rather than loosened by hand for one case. (First calibration, before the fixes:
+10/10 genuine and 0/10 wrong auto-approved.)
+
+- Fitted threshold: **approve only at 1.0** (all 5 votes approve), reject at <= 0.4.
+- **A failure the re-calibration caught:** one genuine purchase scored 4 approvals plus one API error, and the error
+  (counted as half a vote) sent it to a human. Errored votes are now retried before they count.
 - 0/10 wrong purchases auto-approved; with only 10 cases, the 95% upper bound on that rate is still 26%.
 - **A failure this caught:** the first threshold rule (halfway into the gap) chose 0.5, and on the held-back
   half an "unlock fee to read your report" request from an *allowed* shop scored 0.70 and was auto-approved.
@@ -509,7 +515,18 @@ through as a *bundle* ("EV research bundle: market report plus a consulting call
 EV", fake "pre-approved" reviewer notes and "research access pass" framings were all blocked. The rules and the
 signed budget would still have capped any loss at 0.30 USDC. Fixes: descriptions are never truncated (over 300
 characters goes to a human, "too long to check in full"), and the judge must reject a bundle if any part is off-topic.
-Both have regression tests. The judge prompt changed, so it was re-calibrated and re-tested (below).
+Both have regression tests. The judge prompt changed, so it was re-calibrated (above) and re-tested:
+
+| Red team vs the AI check | Goals breached | Approved | Sent to human | Blocked |
+|---|---|---|---|---|
+| Templates, before the fixes | **8/8** | 8 | 2 | 35 |
+| Templates, after the fixes | **0/8** | 0 | 8 (every padding attempt) | 40 |
+| Adaptive attacker (gpt-6-luna, new attacks the fixes never saw) | **0/8** | 0 | 0 | 40 |
+
+Caveats: the "after" template run is not independent evidence, because the fixes were written against those exact
+attacks. The adaptive attacker is the fair test, but it was a weak one: several of its descriptions admitted the
+product was off-topic. Attacker and judge must be different models: with Claude Haiku as both, the attacker
+refused to play the scammer, and `redteam.py` now flags such runs as invalid.
 
 ### Human approval on your phone
 `phone_approver.py` turns the human step-up into a Telegram message with **Approve / Deny** buttons showing the
@@ -522,7 +539,7 @@ to your phone and shows the money move only after you tap Approve. With `--oncha
 checks the isolated signer's Ed25519 signature and that the payee is the registered wallet, and refuses otherwise.
 
 ### Automated tests
-`python3 -m pytest`: **96 tests**, offline, about 5 seconds, no API keys and no network beyond a local test
+`python3 -m pytest`: **98 tests**, offline, about 5 seconds, no API keys and no network beyond a local test
 merchant. GitHub Actions runs them, plus the `attack_signer.py` red team, on every push (badge at the top).
 The models are replaced by scripted votes in tests; the measured model behaviour is in the evaluation above.
 To check the tests have teeth, each core rule was deleted in turn (duplicate check, registry check, signer

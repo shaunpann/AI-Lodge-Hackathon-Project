@@ -445,9 +445,13 @@ Anything uncertain is blocked or sent to a human.
     st.caption("Principle: the AI advises, code decides, and everything fails safe.")
 
     st.markdown("### Code map")
-    st.caption("Every box is a file in the repo. Amber = firewall · green = authorization · rose = test shop · "
-               "indigo = evaluation. Made with GitDiagram; the facilitator is not built (payments are mocked) and "
-               "human approval is a terminal prompt for now.")
+    st.markdown(
+        '<p style="font-size:0.875rem;opacity:0.85">Every box is a file in the repo. '
+        '<span style="color:#f59e0b;font-weight:600">Amber</span> = firewall, '
+        '<span style="color:#22c55e;font-weight:600">green</span> = authorization, '
+        '<span style="color:#fb7185;font-weight:600">rose</span> = test shop, '
+        '<span style="color:#818cf8;font-weight:600">indigo</span> = evaluation. Made with GitDiagram.</p>',
+        unsafe_allow_html=True)
     try:
         code_map = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs", "code_map.mmd")).read()
     except OSError:

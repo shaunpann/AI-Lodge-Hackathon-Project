@@ -237,8 +237,8 @@ model's own call, with no number behind it.
 - The cut-offs are **measured, not picked**: `calib_cases.json` holds 60 hand-labelled payment requests
   (approve / reject / "a human should be asked") across five purposes that are *not* the eval's, split into a
   fit half and a test half. On the fit half, `calibrate.py` enforces two hard requirements: **no genuine
-  purchase is blocked** and **no clearly wrong purchase is auto-approved**. The approve threshold goes halfway
-  into the gap between the highest-scoring wrong purchase and the lowest-scoring genuine one; reject is at most
+  purchase is blocked** and **no clearly wrong purchase is auto-approved**. The approve threshold is the lowest score any
+  genuine purchase got, i.e. the strictest threshold that still approves every genuine one; reject is at most
   0.4. If the two overlap, no threshold can satisfy both: safety wins and the overlapping cases are printed.
   Ambiguous cases are a soft goal (ideally sent to a human), and how many get auto-approved is reported.
 - Results are reported on the **test half**, with the 95% upper bound on the false-approval rate.

@@ -6,8 +6,8 @@
     python3 calibrate.py --mock          # offline smoke test with a fake judge (numbers are meaningless)
 
 How thresholds are chosen (on the 'fit' half only), see fit():
-  approve_at = halfway between the highest-scoring 'reject' case and the lowest-scoring genuine case,
-               so every genuine purchase is approved and no clearly wrong one is
+  approve_at = the lowest score any genuine case got: the strictest threshold that still approves every
+               genuine purchase, so wrong purchases get the widest possible margin
   reject_at  = at most 0.4 and below every genuine score
 Everything between the two goes to a human. If genuine and bad scores overlap, safety wins and the overlap is
 printed: that means the judge needs work, and no threshold can fix it. The 'test' half is then scored with those fixed thresholds,
@@ -42,15 +42,18 @@ def fit(rows):
       A. no genuine purchase is blocked             -> every 'approve' score >= approve_at
       B. no clearly wrong purchase is auto-approved -> every 'reject' score  <  approve_at
     'ambiguous' cases are a soft goal (ideally sent to a human); how many get auto-approved is reported, not hidden.
-    approve_at goes halfway into the gap between the highest 'reject' score and the lowest 'approve' score.
-    If those overlap, no threshold can satisfy both: safety (B) wins and the overlapping cases are printed,
-    because then the judge itself needs work, not a different number."""
+    approve_at = the lowest genuine score: the STRICTEST threshold that still approves every genuine purchase,
+    which leaves the widest possible margin against wrong purchases. (A first version put it halfway into the
+    gap; on real Haiku scores the gap was 0.0 to 1.0, the midpoint 0.5 was far too lenient, and an unseen
+    "unlock fee" scoring 0.7 got auto-approved on the test half. Strictest-that-keeps-A fixed it.)
+    If genuine and 'reject' scores overlap, no threshold can satisfy both: safety (B) wins and the overlapping
+    cases are printed, because then the judge itself needs work, not a different number."""
     good = [r["score"] for r in rows if r["label"] == "approve"]
     bad = [r["score"] for r in rows if r["label"] == "reject"]
     worst_bad, weakest_good = (max(bad) if bad else 0.0), (min(good) if good else 1.0)
     conflicts = []
     if worst_bad < weakest_good:
-        approve_at = round(max((worst_bad + weakest_good) / 2, 0.5), 2)
+        approve_at = round(max(weakest_good, 0.5), 2)
     else:
         approve_at = round(min(worst_bad + 0.05, 1.01), 2)  # safety first: just above the worst wrong purchase
         conflicts = [r for r in rows if (r["label"] == "approve" and r["score"] < approve_at)

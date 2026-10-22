@@ -292,7 +292,8 @@ export LLM_MODEL="claude-haiku-5-5"
 streamlit run app.py          # dashboard + live attack runner at http://localhost:8501
 python3 eval.py               # full evaluation: 43 cases x 3 modes (~25 min)
 python3 demo.py A10-retry-1   # one case in the terminal, firewall off then on
-pip install pytest && python3 -m pytest   # 68 offline tests, ~5 s, no keys needed
+pip install pytest && python3 -m pytest   # 90 offline tests, ~5 s, no keys needed
+REPEAT=3 MODES=prompt,on python3 eval.py # repeat runs, reports successful attacks per run
 
 # Hardening (optional)
 python3 calibrate.py          # fit the AI check's confidence thresholds (60 cases x 5 samples)
@@ -505,10 +506,12 @@ amount, shop, wallet and reason. Only a tap from your chat on that payment's but
 other chats are ignored), and no answer within the timeout means deny. An Approve becomes an Ed25519 approval
 bound to that one payment, which the isolated signer verifies. Setup takes about 3 minutes with @BotFather
 (see the file's header); `python3 phone_approver.py demo` sends a 0.28 USDC payment (above the 0.25 threshold)
-to your phone and shows the money move only after you tap Approve.
+to your phone and shows the money move only after you tap Approve. With `--onchain` (testnet wallets from
+`.wallets.env`), the approved payment then becomes a **real Base Sepolia transaction**: `testnet_settle.py` first
+checks the isolated signer's Ed25519 signature and that the payee is the registered wallet, and refuses otherwise.
 
 ### Automated tests
-`python3 -m pytest`: **68 tests**, offline, about 5 seconds, no API keys and no network beyond a local test
+`python3 -m pytest`: **90 tests**, offline, about 5 seconds, no API keys and no network beyond a local test
 merchant. GitHub Actions runs them, plus the `attack_signer.py` red team, on every push (badge at the top).
 The models are replaced by scripted votes in tests; the measured model behaviour is in the evaluation above.
 To check the tests have teeth, each core rule was deleted in turn (duplicate check, registry check, signer

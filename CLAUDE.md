@@ -22,6 +22,8 @@ money moves. Evaluated against a synthetic attack suite. Read README.md for the 
 
 - `phone_approver.py`: Telegram Approve/Deny step-up (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`); `setup` and `demo` commands.
 
+- `testnet_settle.py`: verifies a signer-signed payment then sends a real Base Sepolia testnet transfer (`phone_approver.py demo --onchain`).
+
 ## Rules
 - Never edit `cases.json` or the `make_*.py` generators to make results look better; new cases are appended and committed before their first run.
 - Never tune `judge.py` on held-out (`H-*`) cases, and never tune its prompt on `calib_cases.json` (that only fits thresholds).
@@ -32,6 +34,6 @@ money moves. Evaluated against a synthetic attack suite. Read README.md for the 
 
 ## Commands
 - `python3 -m pytest` (offline, no keys; must stay green; add a test with every new rule)
-- `python3 eval.py [case-id-prefixes]`; `MODES=off,on python3 eval.py` for a subset of modes.
+- `REPEAT=3 python3 eval.py` repeats every mode. `python3 eval.py [case-id-prefixes]`; `MODES=off,on python3 eval.py` for a subset of modes.
 - `streamlit run app.py`
 - `python3 demo.py A10-retry-1`

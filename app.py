@@ -479,7 +479,7 @@ Anything uncertain is blocked or sent to a human.
     box.textContent = "Diagram failed to render: " + (e && e.message ? e.message : e);
   }}
 </script>""", height=720, scrolling=True)
-        st.caption("Zoom and pan it on GitHub (README, Code map) · read the code: [github.com/shaunpann/AI-Lodge-Hackathon-Project]"
+        st.caption("Zoom and pan it on GitHub (README, Code map), or read the code: [github.com/shaunpann/AI-Lodge-Hackathon-Project]"
                    "(https://github.com/shaunpann/AI-Lodge-Hackathon-Project)")
 
 # ================================================================ audit trail

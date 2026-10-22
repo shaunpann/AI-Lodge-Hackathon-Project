@@ -15,6 +15,7 @@ Setup (once, about 3 minutes):
 
 Try it:
   python3 phone_approver.py demo               # a 0.28 USDC payment (above the 0.25 threshold) waits for your tap
+  python3 phone_approver.py demo --onchain     # same, and an approved payment becomes a real Base Sepolia tx
 
 Honest scope: the tap happens on your phone, but the approval KEY is held by this approver process on your
 computer (separate from the gateway). Production would keep the key on the phone itself (a passkey)."""
@@ -139,17 +140,30 @@ def setup():
         print(f"chat id for {name}: {cid}\n  export TELEGRAM_CHAT_ID=\"{cid}\"")
 
 
-def demo():
-    """Full path: user-signed mandate → gateway → step-up on your phone → isolated signer → merchant ledger."""
-    import threading, uvicorn
+def demo(onchain=False):
+    """Full path: user-signed mandate → gateway → step-up on your phone → isolated signer → merchant ledger.
+    With onchain=True, the registered merchant is your testnet MERCHANT_ADDRESS and an approved payment is then
+    settled as a real Base Sepolia transaction (testnet_settle.py)."""
+    import tempfile, threading, uvicorn
     from merchant import app
     from gateway import Gateway
     from signer import RemoteSigner
     from approver import sign_mandate
-    import policy
+    import policy, testnet_settle
     base, signer_url = "http://127.0.0.1:8402", "http://127.0.0.1:8403"
+    env = dict(os.environ)
+    if onchain:  # pin the real testnet merchant wallet in BOTH the firewall's and the signer's registry
+        payto = testnet_settle.merchant_address()
+        policy.MERCHANT_REGISTRY["researchhub"] = payto
+        reg = json.load(open("signer_registry.json"))
+        reg["researchhub"] = payto
+        tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+        json.dump(reg, tmp)
+        tmp.close()
+        env["SIGNER_REGISTRY"] = tmp.name
+    payto = policy.MERCHANT_REGISTRY["researchhub"]
     threading.Thread(target=uvicorn.Server(uvicorn.Config(app, port=8402, log_level="warning")).run, daemon=True).start()
-    svc = subprocess.Popen([sys.executable, "signer_service.py"], stdout=subprocess.DEVNULL)
+    svc = subprocess.Popen([sys.executable, "signer_service.py"], stdout=subprocess.DEVNULL, env=env)
     try:
         for _ in range(60):
             try:
@@ -157,18 +171,26 @@ def demo():
             except Exception:
                 time.sleep(0.2)
         httpx.post(base + "/ledger/reset")
-        httpx.post(base + "/custom/config", json={"merchantId": "researchhub", "payTo": policy.MERCHANT_REGISTRY["researchhub"],
+        httpx.post(base + "/custom/config", json={"merchantId": "researchhub", "payTo": payto,
                    "amount": 0.28, "asset": "USDC", "network": "base-sepolia",
                    "description": "Market research report: Southeast Asia EV adoption, full edition", "page_text": ""})
         mandate = {"purpose": "Buy market research reports and news articles about Southeast Asia EV adoption for the user",
                    "allowed_merchants": ["researchhub", "newsdaily"], "max_per_payment": 0.50, "max_total": 0.30,
                    "max_payments": 5, "approval_threshold": 0.25}
-        signer = RemoteSigner(mandate, sign_mandate(mandate), signer_url)
+        signer = testnet_settle.CapturingSigner(RemoteSigner(mandate, sign_mandate(mandate), signer_url))
         gw = Gateway(mandate, signer, base, firewall=True, approve_fn=phone_approver(signer), case_id="phone-demo")
         print("Agent asks to buy a 0.28 USDC report (above the 0.25 approval threshold). Check your phone.")
         out = gw.paid_fetch("/custom/item")
         print("\nResult:", out[:120])
         print("Money that actually moved:", json.dumps(httpx.get(base + "/ledger").json(), indent=1))
+        if onchain:
+            if signer.last_header is None:
+                print("\nNothing was signed, so nothing is sent on-chain.")
+            else:
+                pl = testnet_settle.verified_payload(signer.last_header, payto)
+                print("\nSignature checked against the signer's public key; payee is the registered wallet. Sending…")
+                link = testnet_settle.send(pl)
+                print(f"Real Base Sepolia transaction: {link}")
     finally:
         svc.terminate()
 
@@ -178,6 +200,6 @@ if __name__ == "__main__":
     if cmd == "setup":
         setup()
     elif cmd == "demo":
-        demo()
+        demo(onchain="--onchain" in sys.argv)
     else:
         print(__doc__)

@@ -49,30 +49,37 @@ class Gateway:
             return r.text
         accepted = r.json()["accepts"][0]
         t0 = time.perf_counter()
+        approval = None
 
         if not self.firewall:
-            decision, reasons, verdict, jreason = "allow", ["firewall off"], "n/a", ""
+            decision, reasons, verdict, jreason, jscore = "allow", ["firewall off"], "n/a", "", None
         else:
             decision, reasons = policy.evaluate(accepted, self.mandate, self.state)
-            verdict, jreason = ("not_run", "policy already blocked") if decision == "block" else judge_mod.judge(accepted, self.mandate)
+            if decision == "block":
+                verdict, jreason, jscore = "not_run", "policy already blocked", None
+            else:
+                j = judge_mod.judge_full(accepted, self.mandate)
+                verdict, jreason, jscore = j["verdict"], j["reason"], j.get("score")
             if decision != "block":
                 if verdict == "reject":
                     decision, reasons = "block", [f"intent judge: {jreason}"]
                 elif verdict == "uncertain":
                     decision, reasons = "step_up", [f"intent judge unsure: {jreason}"]
             if decision == "step_up":
-                decision = "allow" if self.approve_fn(accepted, reasons) else "block"
+                # approve_fn returns False (deny), True (plain yes) or a signed approval token for the signer
+                approval = self.approve_fn(accepted, reasons)
+                decision = "allow" if approval else "block"
                 reasons = reasons + ["human approved" if decision == "allow" else "no human approval -> denied"]
         check_ms = (time.perf_counter() - t0) * 1000
 
         entry = {"path": path, "merchant": accepted.get("merchantId"), "payTo": accepted["payTo"],
                  "amount": accepted["maxAmountRequired"], "decision": decision, "reasons": reasons,
-                 "judge": verdict, "judge_reason": jreason, "check_ms": round(check_ms, 1)}
+                 "judge": verdict, "judge_reason": jreason, "judge_score": jscore, "check_ms": round(check_ms, 1)}
         if decision != "allow":
             self._log(entry)
             return f"[PAYMENT BLOCKED by firewall: {'; '.join(reasons)}]"
         try:
-            header = self.signer.sign(accepted)
+            header = self.signer.sign(accepted, approval=approval if isinstance(approval, str) else None)
         except PermissionError as e:
             entry.update(decision="block", reasons=[str(e)])
             self._log(entry)

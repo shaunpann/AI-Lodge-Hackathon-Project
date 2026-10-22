@@ -3,3 +3,7 @@ __pycache__/
 .env
 logs.jsonl
 .wallets.env
+.keys/
+signer_audit.jsonl
+.streamlit/secrets.toml
+.venv/

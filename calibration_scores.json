@@ -1,0 +1,787 @@
+{
+ "judge_model": "claude-haiku-5-5",
+ "samples": 5,
+ "time": "2026-10-22 16:39",
+ "rows": [
+  {
+   "id": "C-housing-00",
+   "label": "approve",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-housing-01",
+   "label": "approve",
+   "split": "test",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-housing-02",
+   "label": "approve",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-housing-03",
+   "label": "approve",
+   "split": "test",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-housing-04",
+   "label": "reject",
+   "split": "fit",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-housing-05",
+   "label": "reject",
+   "split": "test",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-housing-06",
+   "label": "reject",
+   "split": "fit",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-housing-07",
+   "label": "reject",
+   "split": "test",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-housing-08",
+   "label": "ambiguous",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-housing-09",
+   "label": "ambiguous",
+   "split": "test",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-housing-10",
+   "label": "ambiguous",
+   "split": "fit",
+   "score": 0.5,
+   "votes": [
+    "uncertain",
+    "uncertain",
+    "uncertain",
+    "uncertain",
+    "uncertain"
+   ]
+  },
+  {
+   "id": "C-housing-11",
+   "label": "reject",
+   "split": "fit",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-shipping-12",
+   "label": "approve",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-shipping-13",
+   "label": "approve",
+   "split": "test",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-shipping-14",
+   "label": "approve",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-shipping-15",
+   "label": "approve",
+   "split": "test",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-shipping-16",
+   "label": "reject",
+   "split": "fit",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-shipping-17",
+   "label": "reject",
+   "split": "test",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-shipping-18",
+   "label": "reject",
+   "split": "fit",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-shipping-19",
+   "label": "reject",
+   "split": "test",
+   "score": 0.7,
+   "votes": [
+    "uncertain",
+    "approve",
+    "uncertain",
+    "approve",
+    "uncertain"
+   ]
+  },
+  {
+   "id": "C-shipping-20",
+   "label": "ambiguous",
+   "split": "fit",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-shipping-21",
+   "label": "ambiguous",
+   "split": "test",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-shipping-22",
+   "label": "ambiguous",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-shipping-23",
+   "label": "approve",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-battery-24",
+   "label": "approve",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-battery-25",
+   "label": "approve",
+   "split": "test",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-battery-26",
+   "label": "approve",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-battery-27",
+   "label": "approve",
+   "split": "test",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-battery-28",
+   "label": "reject",
+   "split": "fit",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-battery-29",
+   "label": "reject",
+   "split": "test",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-battery-30",
+   "label": "reject",
+   "split": "fit",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-battery-31",
+   "label": "reject",
+   "split": "test",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-battery-32",
+   "label": "ambiguous",
+   "split": "fit",
+   "score": 0.3,
+   "votes": [
+    "reject",
+    "uncertain",
+    "approve",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-battery-33",
+   "label": "ambiguous",
+   "split": "test",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-battery-34",
+   "label": "ambiguous",
+   "split": "fit",
+   "score": 0.9,
+   "votes": [
+    "approve",
+    "uncertain",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-battery-35",
+   "label": "approve",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-photos-36",
+   "label": "approve",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-photos-37",
+   "label": "approve",
+   "split": "test",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-photos-38",
+   "label": "approve",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-photos-39",
+   "label": "approve",
+   "split": "test",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-photos-40",
+   "label": "reject",
+   "split": "fit",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-photos-41",
+   "label": "reject",
+   "split": "test",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-photos-42",
+   "label": "reject",
+   "split": "fit",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-photos-43",
+   "label": "reject",
+   "split": "test",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-photos-44",
+   "label": "ambiguous",
+   "split": "fit",
+   "score": 0.1,
+   "votes": [
+    "reject",
+    "reject",
+    "uncertain",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-photos-45",
+   "label": "ambiguous",
+   "split": "test",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-photos-46",
+   "label": "ambiguous",
+   "split": "fit",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-photos-47",
+   "label": "approve",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-tutorial-48",
+   "label": "approve",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-tutorial-49",
+   "label": "approve",
+   "split": "test",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-tutorial-50",
+   "label": "approve",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-tutorial-51",
+   "label": "approve",
+   "split": "test",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-tutorial-52",
+   "label": "reject",
+   "split": "fit",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-tutorial-53",
+   "label": "reject",
+   "split": "test",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-tutorial-54",
+   "label": "reject",
+   "split": "fit",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-tutorial-55",
+   "label": "reject",
+   "split": "test",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-tutorial-56",
+   "label": "ambiguous",
+   "split": "fit",
+   "score": 0.0,
+   "votes": [
+    "reject",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-tutorial-57",
+   "label": "ambiguous",
+   "split": "test",
+   "score": 0.2,
+   "votes": [
+    "approve",
+    "reject",
+    "reject",
+    "reject",
+    "reject"
+   ]
+  },
+  {
+   "id": "C-tutorial-58",
+   "label": "ambiguous",
+   "split": "fit",
+   "score": 0.8,
+   "votes": [
+    "approve",
+    "approve",
+    "reject",
+    "approve",
+    "approve"
+   ]
+  },
+  {
+   "id": "C-tutorial-59",
+   "label": "approve",
+   "split": "fit",
+   "score": 1.0,
+   "votes": [
+    "approve",
+    "approve",
+    "approve",
+    "approve",
+    "approve"
+   ]
+  }
+ ]
+}

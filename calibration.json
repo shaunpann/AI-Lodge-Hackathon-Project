@@ -1,0 +1,66 @@
+{
+  "approve_at": 1.0,
+  "reject_at": 0.4,
+  "samples": 5,
+  "judge_model": "claude-haiku-5-5",
+  "fitted_on": "35 labelled fit cases, 2026-10-22",
+  "fit": {
+    "n": 35,
+    "table": {
+      "approve": {
+        "approve": 14,
+        "human": 0,
+        "reject": 0
+      },
+      "ambiguous": {
+        "approve": 2,
+        "human": 3,
+        "reject": 5
+      },
+      "reject": {
+        "approve": 0,
+        "human": 0,
+        "reject": 11
+      }
+    },
+    "false_approvals": 0,
+    "false_approval_upper95": 0.238,
+    "genuine_auto_rejected": 0,
+    "genuine_blocked": 0,
+    "genuine_auto_approved": 14,
+    "genuine_total": 14,
+    "ambiguous_auto_approved": 2,
+    "ambiguous_total": 10,
+    "sent_to_human": 3
+  },
+  "test": {
+    "n": 25,
+    "table": {
+      "approve": {
+        "approve": 10,
+        "human": 0,
+        "reject": 0
+      },
+      "ambiguous": {
+        "approve": 2,
+        "human": 0,
+        "reject": 3
+      },
+      "reject": {
+        "approve": 0,
+        "human": 1,
+        "reject": 9
+      }
+    },
+    "false_approvals": 0,
+    "false_approval_upper95": 0.259,
+    "genuine_auto_rejected": 0,
+    "genuine_blocked": 0,
+    "genuine_auto_approved": 10,
+    "genuine_total": 10,
+    "ambiguous_auto_approved": 2,
+    "ambiguous_total": 5,
+    "sent_to_human": 1
+  },
+  "conflicts": []
+}

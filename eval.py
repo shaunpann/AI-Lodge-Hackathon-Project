@@ -4,7 +4,9 @@
   on      - firewall: rules enforced by gateway + policy engine + intent judge + signer
 Usage: python eval.py                 (all cases, all modes)
        python eval.py A3 L-report     (only cases whose id starts with these)
-       MODES=off,on python eval.py    (subset of modes)"""
+       MODES=off,on python eval.py    (subset of modes)
+       SIGNER_URL=http://127.0.0.1:8403 python eval.py   (firewall mode signs via the isolated signer service;
+                                                          start it first: python3 signer_service.py)"""
 import json, sys, threading, time, statistics, os
 import httpx, uvicorn
 from merchant import app
@@ -15,6 +17,7 @@ import llm
 
 BASE = "http://127.0.0.1:8402"
 ATTACKER = "0xATTACKER00000000000000000000000000000666"
+SIGNER_URL = os.environ.get("SIGNER_URL")  # e.g. http://127.0.0.1:8403 to use the isolated signer_service.py
 MODE_LABEL = {"off": "no protection", "prompt": "prompt-only rules", "on": "firewall"}
 
 
@@ -47,9 +50,16 @@ def run(cases, mode):
     rows = []
     for c in cases:
         httpx.post(BASE + "/ledger/reset")
-        signer = Signer(hard_cap_total=c["mandate"]["max_total"], hard_cap_per_payment=c["mandate"]["max_per_payment"],
-                        enforce=firewall)
-        gw = Gateway(c["mandate"], signer, BASE, firewall=firewall, case_id=c["id"])
+        approve_fn = None
+        if firewall and SIGNER_URL:  # isolated signer: separate process, user-signed mandate, human-signed approvals
+            from signer import RemoteSigner
+            from approver import sign_mandate, human_approver
+            signer = RemoteSigner(c["mandate"], sign_mandate(c["mandate"]), SIGNER_URL)
+            approve_fn = human_approver(signer, mode=os.environ.get("APPROVER_MODE", "no"))
+        else:
+            signer = Signer(hard_cap_total=c["mandate"]["max_total"], hard_cap_per_payment=c["mandate"]["max_per_payment"],
+                            enforce=firewall)
+        gw = Gateway(c["mandate"], signer, BASE, firewall=firewall, case_id=c["id"], approve_fn=approve_fn)
         err = False
         try:
             transcript = make_agent(gw, guardrails=(mode == "prompt")).run(c["task"])
@@ -87,7 +97,15 @@ if __name__ == "__main__":
         os.remove("logs.jsonl")
     start_merchant()
     print(f"Agent: {'LLM (' + llm.model('agent') + ')' if llm.available('agent') else 'scripted gullible agent (no LLM key)'}")
-    print(f"Intent judge: {llm.model('judge') if llm.available('judge') else 'OFF (no LLM key)'}\n")
+    print(f"Intent judge: {llm.model('judge') if llm.available('judge') else 'OFF (no LLM key)'}")
+    if llm.available("judge"):
+        import judge as _j
+        t = _j.thresholds()
+        print(f"  {t['samples']} samples per payment · approve at >= {t['approve_at']}, reject at <= {t['reject_at']} "
+              f"· thresholds: {t['source']}")
+        if t["source"].startswith("default"):
+            print("  Note: uncalibrated (majority-vote defaults). Run python3 calibrate.py to fit thresholds from data.")
+    print(f"Signer: {'isolated service at ' + SIGNER_URL if SIGNER_URL else 'in-process mock'}\n")
 
     results = {m: run(cases, m) for m in modes}
     summary = {m: summarise(rows) for m, rows in results.items()}
@@ -98,6 +116,8 @@ if __name__ == "__main__":
     json.dump({"agent": "llm" if llm.available("agent") else "scripted",
                "model": llm.model("agent") if llm.available("agent") else None,
                "judge_model": llm.model("judge") if llm.available("judge") else None,
+               "judge_thresholds": __import__("judge").thresholds() if llm.available("judge") else None,
+               "signer": "isolated service" if SIGNER_URL else "in-process",
                "modes": modes, "summary": summary, "by_class": by_class,
                "rows": [r for rows in results.values() for r in rows]},
               open("results.json", "w"), indent=2)
